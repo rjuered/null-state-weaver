@@ -32,10 +32,13 @@ const QRPreviewCard = ({
   cornerRadius,
   dotSize
 }: QRPreviewCardProps) => {
-  const shouldShowQR = (generated || (qrValue && subscription !== 'free')) && qrURL;
+  const shouldShowQR = generated && qrURL;
   
   // Calculate the size based on dot size percentage
   const calculatedSize = Math.max(200, Math.min(400, 200 + (dotSize * 2)));
+  
+  // Ensure error correction level is valid
+  const validLevel = ['L', 'M', 'Q', 'H'].includes(level) ? level as "L" | "M" | "Q" | "H" : 'H';
   
   return (
     <Card className="shadow-sm">
@@ -50,7 +53,8 @@ const QRPreviewCard = ({
               size={calculatedSize}
               bgColor={backgroundColor}
               fgColor={dotColor}
-              level={level as "L" | "M" | "Q" | "H"}
+              level={validLevel}
+              includeMargin={true}
               style={{ borderRadius: `${cornerRadius}px` }}
               imageSettings={logo ? {
                 src: logo,

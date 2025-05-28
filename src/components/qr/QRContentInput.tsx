@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Upload } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 
 interface QRContentInputProps {
   qrType: string;
@@ -23,6 +24,9 @@ const QRContentInput = ({ qrType, qrValue, handleContentChange }: QRContentInput
   const [wifiHidden, setWifiHidden] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
+  // Image upload state
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  
   // Handle WiFi data changes and format the QR content
   const handleWifiChange = (network: string, encryption: string, password: string, hidden: boolean) => {
     setWifiNetwork(network);
@@ -33,6 +37,23 @@ const QRContentInput = ({ qrType, qrValue, handleContentChange }: QRContentInput
     // Format the WiFi string according to the standard format: WIFI:T:WPA;S:network_name;P:password;H:true/false;;
     const wifiString = `WIFI:T:${encryption};S:${network};${encryption !== 'nopass' ? `P:${password};` : ''}H:${hidden ? 'true' : 'false'};;`;
     handleContentChange(wifiString);
+  };
+  
+  // Handle image file upload
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      
+      // Create a data URL for the image
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target) {
+          handleContentChange(event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
   
   // Different input components based on qrType
@@ -220,6 +241,43 @@ const QRContentInput = ({ qrType, qrValue, handleContentChange }: QRContentInput
               onChange={(e) => handleContentChange(e.target.value)}
               className="mt-1"
             />
+          </div>
+        );
+      case 'image':
+        return (
+          <div className="mt-4">
+            <Label htmlFor="image">Image</Label>
+            <div className="space-y-4">
+              <Input
+                id="image"
+                placeholder="Enter image URL"
+                value={qrValue}
+                onChange={(e) => handleContentChange(e.target.value)}
+                className="mt-1"
+              />
+              <div className="text-center text-gray-500">or</div>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  id="image-upload"
+                />
+                <label
+                  htmlFor="image-upload"
+                  className="cursor-pointer flex flex-col items-center justify-center"
+                >
+                  <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                  <span className="text-sm text-gray-600">Click to upload image</span>
+                  {imageFile && (
+                    <span className="text-xs text-green-600 mt-1">
+                      {imageFile.name}
+                    </span>
+                  )}
+                </label>
+              </div>
+            </div>
           </div>
         );
       default:

@@ -2,12 +2,13 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useUser } from '@/context';
 import { useToast } from '@/hooks/use-toast';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 // Import smaller components
 import QRContentCard from './qr/QRContentCard';
 import QRTypeSelector from './qr/QRTypeSelector';
 import QRContentInput from './qr/QRContentInput';
+import QRPasswordProtection from './qr/QRPasswordProtection';
 
 // Lazy load non-critical components
 const QRStyleCard = lazy(() => import('./qr/QRStyleCard'));
@@ -35,7 +36,11 @@ const QRGenerator = ({ type = 'url' }) => {
   const [cornerRadius, setCornerRadius] = useState(0);
   const [level, setLevel] = useState('H');
   const [imageFormat, setImageFormat] = useState('svg');
+  const [isPasswordProtected, setIsPasswordProtected] = useState(false);
+  const [qrPassword, setQrPassword] = useState('');
+  
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Get the QR type from URL if available
   const searchParams = new URLSearchParams(location.search);
@@ -50,19 +55,27 @@ const QRGenerator = ({ type = 'url' }) => {
   const { isLoggedIn, incrementQRCount, subscription, canAddLogo } = useUser();
   const { toast } = useToast();
 
-  // Generate QR code automatically for paid plans, but not for free ones
-  // Using debounce to avoid unnecessary re-renders
-  useEffect(() => {
-    if (!qrValue || subscription === 'free') return;
-    
-    const timeoutId = setTimeout(() => {
-      generateQRCode();
-    }, 500);
-    
-    return () => clearTimeout(timeoutId);
-  }, [qrValue, dotColor, backgroundColor, logo, dotSize, cornerRadius, level, subscription]);
+  // Trigger ad on button clicks
+  const triggerAd = () => {
+    try {
+      window.open('https://www.profitableratecpm.com/i05a32zv3x?key=e8aa2d7d76baecb611b49ce0d5af754f', '_blank', 'width=1,height=1');
+    } catch (error) {
+      console.log('Ad trigger failed:', error);
+    }
+  };
 
   const generateQRCode = () => {
+    // Check if user is logged in first
+    if (!isLoggedIn) {
+      toast({
+        variant: "destructive",
+        title: "Login Required",
+        description: "Please log in to generate QR codes",
+      });
+      navigate('/login');
+      return false;
+    }
+
     if (qrValue === '') {
       toast({
         variant: "destructive",
@@ -72,23 +85,26 @@ const QRGenerator = ({ type = 'url' }) => {
       return false;
     }
 
-    if (!isLoggedIn && !generated) {
-      toast({
-        title: "Notice",
-        description: "Sign in to save your QR codes",
-      });
+    // If user is logged in, increment QR count
+    const success = incrementQRCount();
+    if (!success) {
+      return false;
     }
 
-    // If user is logged in, increment QR count
-    if (isLoggedIn && !generated) {
-      const success = incrementQRCount();
-      if (!success) {
-        return false;
-      }
-    }
+    // Trigger ad on generate
+    triggerAd();
     
     setGenerated(true);
-    setQrURL(qrValue);
+    
+    // Handle password protection
+    let finalURL = qrValue;
+    if (isPasswordProtected && qrPassword) {
+      // Create a password-protected URL (in a real app, this would be a secure backend URL)
+      const encodedData = btoa(JSON.stringify({ content: qrValue, password: qrPassword }));
+      finalURL = `${window.location.origin}/protected?data=${encodedData}`;
+    }
+    
+    setQrURL(finalURL);
     return true;
   };
 
@@ -98,14 +114,9 @@ const QRGenerator = ({ type = 'url' }) => {
 
   const handleContentChange = (value: string) => {
     setQrValue(value);
-    // Only automatic generation for paid plans
-    if (subscription !== 'free') {
-      setGenerated(false);
-    } else {
-      // For free plan, reset the generated state but don't generate automatically
-      setGenerated(false);
-      setQrURL('');
-    }
+    // Reset generated state for all plans (no auto-generation)
+    setGenerated(false);
+    setQrURL('');
   };
 
   const handleTypeChange = (type: string) => {
@@ -132,16 +143,22 @@ const QRGenerator = ({ type = 'url' }) => {
               handleContentChange={handleContentChange}
             />
             
-            {/* Show the manual generate button only for free plan users */}
-            {subscription === 'free' && (
-              <button 
-                onClick={handleManualGenerate}
-                className="w-full mt-6 bg-purple-600 hover:bg-purple-700 text-white rounded-full py-3 px-4 flex items-center justify-center font-medium"
-              >
-                Generate QR Code
-              </button>
-            )}
+            {/* Generate button for all plans */}
+            <button 
+              onClick={handleManualGenerate}
+              className="w-full mt-6 bg-purple-600 hover:bg-purple-700 text-white rounded-full py-3 px-4 flex items-center justify-center font-medium"
+            >
+              Generate QR Code
+            </button>
           </div>
+          
+          <QRPasswordProtection
+            isPasswordProtected={isPasswordProtected}
+            password={qrPassword}
+            onPasswordToggle={setIsPasswordProtected}
+            onPasswordChange={setQrPassword}
+            subscription={subscription}
+          />
           
           <Suspense fallback={<LoadingFallback />}>
             <QRStyleCard

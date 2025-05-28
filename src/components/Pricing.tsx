@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
@@ -7,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/context";
 
 const Pricing = () => {
-  const { isLoggedIn, subscription, setUserSubscription, language } = useUser();
+  const { isLoggedIn, subscription, setUserSubscription, subscriptionEndDate, language } = useUser();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -26,8 +27,26 @@ const Pricing = () => {
       return;
     }
     
+    // Check if user has an active subscription and is trying to change
+    if (subscription !== 'free' && plan !== subscription) {
+      toast({
+        variant: "destructive",
+        title: t("Subscription Change Not Allowed", "تغيير الاشتراك غير مسموح"),
+        description: t("You cannot change your subscription until the current period ends", "لا يمكنك تغيير اشتراكك حتى تنتهي الفترة الحالية"),
+      });
+      return;
+    }
+    
     // For free plan
     if (plan === "free") {
+      if (subscription !== 'free') {
+        toast({
+          variant: "destructive",
+          title: t("Cannot Downgrade", "لا يمكن التراجع"),
+          description: t("You cannot downgrade to free plan until your current subscription expires", "لا يمكنك التراجع إلى الخطة المجانية حتى ينتهي اشتراكك الحالي"),
+        });
+        return;
+      }
       setUserSubscription('free');
       toast({
         title: t("Free Plan Selected", "تم اختيار الخطة المجانية"),
@@ -63,7 +82,8 @@ const Pricing = () => {
       ],
       buttonText: t("Start for Free", "ابدأ مجانًا"),
       buttonVariant: "outline",
-      planId: "free"
+      planId: "free",
+      isFree: false
     },
     {
       name: t("Pro", "احترافي"),
@@ -85,7 +105,8 @@ const Pricing = () => {
       buttonText: t("Upgrade to Pro", "الترقية إلى الاحترافي"),
       buttonVariant: "default",
       popular: true,
-      planId: "pro"
+      planId: "pro",
+      isFree: true
     },
     {
       name: t("Business", "أعمال"),
@@ -105,7 +126,8 @@ const Pricing = () => {
       ],
       buttonText: t("Contact Sales", "اتصل بالمبيعات"),
       buttonVariant: "outline",
-      planId: "business"
+      planId: "business",
+      isFree: true
     }
   ];
 
@@ -129,11 +151,16 @@ const Pricing = () => {
               plan.popular 
                 ? "border-qrito-purple shadow-lg relative transform hover:scale-105 transition-transform duration-300" 
                 : "border-gray-200 hover:shadow-md transition-shadow duration-300"
-            }`}
+            } ${subscription === plan.planId ? "ring-2 ring-green-500" : ""}`}
           >
             {plan.popular && (
               <div className="absolute top-0 right-0 bg-qrito-purple text-white text-xs font-bold px-3 py-1 rounded-bl">
                 {t("Popular", "الأكثر شيوعًا")}
+              </div>
+            )}
+            {subscription === plan.planId && (
+              <div className="absolute top-0 left-0 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-br">
+                {t("Your Plan", "خطتك")}
               </div>
             )}
             <div className="p-6">
@@ -142,6 +169,11 @@ const Pricing = () => {
               <div className="mb-4">
                 <span className="text-3xl font-bold">{plan.price}</span>
                 <span className="text-gray-500 ml-1">/ {plan.period}</span>
+                {plan.isFree && (
+                  <div className="text-xs text-green-600 mt-1 font-medium">
+                    {t("Free for a limited time", "مجاني لفترة محدودة")}
+                  </div>
+                )}
               </div>
               <p className="text-gray-600 mb-6 text-sm">{plan.description}</p>
               <Button 
@@ -152,8 +184,9 @@ const Pricing = () => {
                 } transition-all duration-300`}
                 variant={plan.buttonVariant === "default" ? "default" : "outline"}
                 onClick={() => handlePlanSelection(plan.planId)}
+                disabled={subscription === plan.planId || (subscription !== 'free' && plan.planId !== subscription)}
               >
-                {plan.buttonText}
+                {subscription === plan.planId ? t("Current Plan", "الخطة الحالية") : plan.buttonText}
               </Button>
             </div>
             <div className="border-t border-gray-200 p-6">
