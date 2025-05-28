@@ -1,8 +1,14 @@
 
-import React from 'react';
-import { Download, Copy, Share2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Download, Copy, Share2, Facebook, Twitter, MessageCircle, Send, Instagram } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface QRActionButtonsProps {
   generated: boolean;
@@ -23,12 +29,17 @@ const QRActionButtons = ({
   imageFormat = 'svg'
 }: QRActionButtonsProps) => {
   const { toast } = useToast();
+  const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
   const shouldShow = (generated || (qrValue && subscription !== 'free')) && qrURL;
   
-  // Trigger ad on button clicks
+  // Trigger ad in same window as tab (not separate window)
   const triggerAd = () => {
     try {
-      window.open('https://www.profitableratecpm.com/i05a32zv3x?key=e8aa2d7d76baecb611b49ce0d5af754f', '_blank', 'width=1,height=1');
+      // Open in same window as a tab, not separate window
+      const adWindow = window.open('https://www.profitableratecpm.com/i05a32zv3x?key=e8aa2d7d76baecb611b49ce0d5af754f', '_blank', 'noopener,noreferrer');
+      if (adWindow) {
+        adWindow.focus();
+      }
     } catch (error) {
       console.log('Ad trigger failed:', error);
     }
@@ -101,155 +112,84 @@ const QRActionButtons = ({
     // Trigger ad first
     triggerAd();
     
-    const svg = document.getElementById("qr-code-svg");
-    if (!svg) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to copy QR code",
-      });
-      return;
-    }
-
-    const svgData = new XMLSerializer().serializeToString(svg);
-    
-    // Try to copy as text first (SVG data)
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(svgData).then(() => {
+      navigator.clipboard.writeText(qrValue).then(() => {
         toast({
           title: "Copied",
-          description: "QR code copied to clipboard",
+          description: "QR code content copied to clipboard",
         });
       }).catch(() => {
-        // Fallback to creating a temporary textarea
+        // Fallback
         const textArea = document.createElement("textarea");
-        textArea.value = svgData;
+        textArea.value = qrValue;
         document.body.appendChild(textArea);
         textArea.select();
         document.execCommand('copy');
         document.body.removeChild(textArea);
         toast({
           title: "Copied",
-          description: "QR code copied to clipboard",
+          description: "QR code content copied to clipboard",
         });
       });
     } else {
       // Fallback for older browsers
       const textArea = document.createElement("textarea");
-      textArea.value = svgData;
+      textArea.value = qrValue;
       document.body.appendChild(textArea);
       textArea.select();
       document.execCommand('copy');
       document.body.removeChild(textArea);
       toast({
         title: "Copied",
-        description: "QR code copied to clipboard",
+        description: "QR code content copied to clipboard",
       });
     }
   };
-  
-  const shareQRCode = async () => {
+
+  const shareToSocialMedia = (platform: string) => {
     // Trigger ad first
     triggerAd();
     
-    const svg = document.getElementById("qr-code-svg");
-    if (!svg) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to share QR code",
-      });
-      return;
-    }
-
-    try {
-      // Check if Web Share API is supported and we're on HTTPS
-      if (navigator.share && window.location.protocol === 'https:') {
-        // For sharing, convert to PNG for better compatibility
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        const img = new Image();
-        const svgData = new XMLSerializer().serializeToString(svg);
-        const svgBlob = new Blob([svgData], { type: "image/svg+xml" });
-        const url = URL.createObjectURL(svgBlob);
-        
-        img.onload = async () => {
-          canvas.width = img.width;
-          canvas.height = img.height;
-          if (ctx) {
-            ctx.drawImage(img, 0, 0);
-            canvas.toBlob(async (blob) => {
-              if (blob) {
-                const file = new File([blob], "qrcode.png", { type: "image/png" });
-                try {
-                  await navigator.share({
-                    files: [file],
-                    title: "QR Code",
-                    text: "Check out my QR code!"
-                  });
-                  toast({
-                    title: "Shared",
-                    description: "QR code shared successfully",
-                  });
-                } catch (err: any) {
-                  if (err.name !== 'AbortError') {
-                    // Fallback to copying share URL
-                    fallbackShare();
-                  }
-                }
-              }
-            }, 'image/png');
-          }
-          URL.revokeObjectURL(url);
-        };
-        
-        img.src = url;
-      } else {
-        // Fallback for browsers without Web Share API or HTTP
-        fallbackShare();
-      }
-    } catch (error: any) {
-      console.log('Share error:', error);
-      fallbackShare();
-    }
-  };
-
-  const fallbackShare = () => {
-    // Create a shareable URL with the QR content
-    const shareUrl = `${window.location.origin}?shared=${encodeURIComponent(qrValue)}`;
+    const shareText = `Check out my QR code: ${qrValue}`;
+    const shareUrl = encodeURIComponent(qrValue);
+    const encodedText = encodeURIComponent(shareText);
     
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(shareUrl).then(() => {
+    let url = '';
+    
+    switch (platform) {
+      case 'facebook':
+        url = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
+        break;
+      case 'twitter':
+        url = `https://twitter.com/intent/tweet?text=${encodedText}`;
+        break;
+      case 'whatsapp':
+        url = `https://wa.me/?text=${encodedText}`;
+        break;
+      case 'telegram':
+        url = `https://t.me/share/url?url=${shareUrl}&text=${encodedText}`;
+        break;
+      case 'instagram':
+        // Instagram doesn't support direct URL sharing, copy to clipboard instead
+        copyQRCodeToClipboard();
         toast({
-          title: "Share Link Copied",
-          description: "Share link copied to clipboard",
+          title: "Content Copied",
+          description: "Content copied! Open Instagram and paste in your story or post",
         });
-      }).catch(() => {
-        // Final fallback
-        const textArea = document.createElement("textarea");
-        textArea.value = shareUrl;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        toast({
-          title: "Share Link Copied",
-          description: "Share link copied to clipboard",
-        });
-      });
-    } else {
-      // Fallback for older browsers
-      const textArea = document.createElement("textarea");
-      textArea.value = shareUrl;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
+        return;
+      default:
+        return;
+    }
+    
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
       toast({
-        title: "Share Link Copied",
-        description: "Share link copied to clipboard",
+        title: "Shared",
+        description: `Opened ${platform} sharing`,
       });
     }
+    
+    setIsShareMenuOpen(false);
   };
   
   if (!shouldShow) return null;
@@ -271,16 +211,39 @@ const QRActionButtons = ({
           className="w-full"
         >
           <Copy className="mr-2" size={16} />
-          Copy QR Code
+          Copy Content
         </Button>
-        <Button 
-          onClick={shareQRCode} 
-          variant="secondary" 
-          className="w-full"
-        >
-          <Share2 className="mr-2" size={16} />
-          Share
-        </Button>
+        
+        <DropdownMenu open={isShareMenuOpen} onOpenChange={setIsShareMenuOpen}>
+          <DropdownMenuTrigger asChild>
+            <Button variant="secondary" className="w-full">
+              <Share2 className="mr-2" size={16} />
+              Share
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-48">
+            <DropdownMenuItem onClick={() => shareToSocialMedia('facebook')}>
+              <Facebook className="mr-2" size={16} />
+              Facebook
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => shareToSocialMedia('whatsapp')}>
+              <MessageCircle className="mr-2" size={16} />
+              WhatsApp
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => shareToSocialMedia('telegram')}>
+              <Send className="mr-2" size={16} />
+              Telegram
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => shareToSocialMedia('twitter')}>
+              <Twitter className="mr-2" size={16} />
+              Twitter (X)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => shareToSocialMedia('instagram')}>
+              <Instagram className="mr-2" size={16} />
+              Instagram
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

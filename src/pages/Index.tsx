@@ -16,48 +16,58 @@ const Index = () => {
   const navigate = useNavigate();
   const { isLoggedIn, language } = useUser();
   
-  // Load homepage ad script
+  // Load homepage ad script with better error handling
   useEffect(() => {
-    try {
-      // Remove any existing ad scripts first
-      const existingScripts = document.querySelectorAll('script[src*="profitableratecpm.com"]');
-      existingScripts.forEach(script => {
-        if (script.parentNode) {
-          script.parentNode.removeChild(script);
-        }
-      });
-
-      // Create and add new ad script
-      const script = document.createElement('script');
-      script.type = 'text/javascript';
-      script.src = '//pl26659143.profitableratecpm.com/60/df/38/60df386dd2cfa2ac4a8c1e4294a705c6.js';
-      script.async = true;
-      script.defer = true;
-      
-      // Add error handling
-      script.onerror = () => {
-        console.log('Ad script failed to load');
-      };
-      
-      script.onload = () => {
-        console.log('Ad script loaded successfully');
-      };
-      
-      document.head.appendChild(script);
-      
-      return () => {
-        // Cleanup script on unmount
-        try {
-          if (document.head.contains(script)) {
-            document.head.removeChild(script);
+    const loadAd = () => {
+      try {
+        // Remove any existing ad scripts first
+        const existingScripts = document.querySelectorAll('script[src*="profitableratecpm.com"]');
+        existingScripts.forEach(script => {
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
           }
-        } catch (error) {
-          console.log('Error removing ad script:', error);
-        }
-      };
-    } catch (error) {
-      console.log('Error loading ad script:', error);
-    }
+        });
+
+        // Create new ad script
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = '//pl26659143.profitableratecpm.com/60/df/38/60df386dd2cfa2ac4a8c1e4294a705c6.js';
+        script.async = true;
+        script.defer = true;
+        
+        // Add error and load handlers
+        script.onerror = () => {
+          console.log('Homepage ad script failed to load');
+        };
+        
+        script.onload = () => {
+          console.log('Homepage ad script loaded successfully');
+        };
+        
+        // Append to head
+        document.head.appendChild(script);
+        
+        return () => {
+          // Cleanup
+          try {
+            if (document.head.contains(script)) {
+              document.head.removeChild(script);
+            }
+          } catch (error) {
+            console.log('Error removing homepage ad script:', error);
+          }
+        };
+      } catch (error) {
+        console.log('Error loading homepage ad script:', error);
+      }
+    };
+
+    // Load ad after a small delay to ensure DOM is ready
+    const timer = setTimeout(loadAd, 100);
+    
+    return () => {
+      clearTimeout(timer);
+    };
   }, []);
   
   // Redirect to QR type selector if user is logged in
