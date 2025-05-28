@@ -1,197 +1,178 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { QrCode, Calendar, ExternalLink, Trash2, AlertTriangle } from 'lucide-react';
-import { useQRHistory } from '@/hooks/useQRHistory';
 import { Button } from "@/components/ui/button";
-import { useToast } from '@/hooks/use-toast';
-import QRCodeReact from 'qrcode.react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { QrCode, Trash2, Calendar, AlertCircle } from "lucide-react";
+import { useQRHistory } from "@/hooks/useQRHistory";
+import { QRCodeSVG } from "qrcode.react";
 
 const QRHistoryCard = () => {
   const { qrHistory, deleteQRFromHistory, clearHistory } = useQRHistory();
-  const { toast } = useToast();
+
+  // Validate QR data length to prevent crashes
+  const validateQRData = (data: string, errorLevel: string = 'H') => {
+    const maxLengths = {
+      'L': 2953,
+      'M': 2331,
+      'Q': 1663,
+      'H': 1273
+    };
+    
+    const maxLength = maxLengths[errorLevel] || 1273;
+    return data.length <= maxLength;
+  };
+
+  // Safe QR data with truncation if needed
+  const getSafeQRData = (data: string, errorLevel: string = 'H') => {
+    if (validateQRData(data, errorLevel)) {
+      return data;
+    }
+    
+    const maxLengths = {
+      'L': 2953,
+      'M': 2331,
+      'Q': 1663,
+      'H': 1273
+    };
+    
+    const maxLength = maxLengths[errorLevel] || 1273;
+    return data.substring(0, maxLength - 3) + '...';
+  };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return 'Invalid date';
+    }
   };
 
-  const getTypeLabel = (type: string) => {
-    const typeLabels: { [key: string]: string } = {
-      url: 'Website URL',
-      text: 'Text',
-      email: 'Email',
-      wifi: 'WiFi',
-      contact: 'Contact',
-      location: 'Location',
-      event: 'Event',
-      image: 'Image',
-      app: 'App Store',
-      sms: 'SMS'
+  const formatQRType = (type: string) => {
+    const typeMap = {
+      'url': 'Website',
+      'text': 'Text',
+      'email': 'Email',
+      'phone': 'Phone',
+      'sms': 'SMS',
+      'wifi': 'WiFi',
+      'vcard': 'Contact',
+      'image': 'Image'
     };
-    return typeLabels[type] || type;
+    return typeMap[type] || type.charAt(0).toUpperCase() + type.slice(1);
   };
 
-  const truncateContent = (content: string, maxLength: number = 50) => {
-    if (content.length <= maxLength) return content;
-    return content.substring(0, maxLength) + '...';
-  };
-
-  const handleDelete = (id: string, type: string) => {
-    deleteQRFromHistory(id);
-    toast({
-      title: "QR Code Deleted",
-      description: `${getTypeLabel(type)} QR code has been removed from your history.`,
-    });
-  };
-
-  const handleClearAll = () => {
-    clearHistory();
-    toast({
-      title: "History Cleared",
-      description: "All QR codes have been removed from your history.",
-    });
-  };
+  if (qrHistory.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <QrCode className="mr-2 h-5 w-5" />
+            QR Code History
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <QrCode className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <p className="text-gray-500">No QR codes generated yet</p>
+            <p className="text-sm text-gray-400 mt-2">Your generated QR codes will appear here</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <QrCode className="h-5 w-5" />
-            QR Code History
-          </CardTitle>
-          {qrHistory.length > 0 && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  Clear All
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Clear All History</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete all your saved QR codes. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleClearAll} className="bg-red-600 hover:bg-red-700">
-                    Clear All
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-        </div>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardTitle className="flex items-center">
+          <QrCode className="mr-2 h-5 w-5" />
+          QR Code History ({qrHistory.length})
+        </CardTitle>
+        {qrHistory.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={clearHistory}
+            className="text-red-600 hover:text-red-700"
+          >
+            <Trash2 className="h-4 w-4 mr-1" />
+            Clear All
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
-        {qrHistory.length > 0 ? (
-          <div className="space-y-4 max-h-96 overflow-y-auto">
-            {qrHistory.map((qr) => (
-              <div key={qr.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50">
-                {/* QR Code Preview */}
+        <div className="grid gap-4 max-h-96 overflow-y-auto">
+          {qrHistory.map((qr) => {
+            const isDataValid = validateQRData(qr.url);
+            const safeData = getSafeQRData(qr.url);
+            
+            return (
+              <div key={qr.id} className="flex items-center space-x-4 p-4 border rounded-lg hover:bg-gray-50">
                 <div className="flex-shrink-0">
-                  <div className="w-16 h-16 border rounded p-1 bg-white">
-                    <QRCodeReact
-                      value={qr.url}
-                      size={56}
-                      fgColor={qr.dotColor}
-                      bgColor={qr.backgroundColor}
-                      level="M"
-                    />
-                  </div>
+                  {isDataValid ? (
+                    <div className="w-16 h-16 bg-white border rounded-lg flex items-center justify-center">
+                      <QRCodeSVG
+                        value={safeData}
+                        size={56}
+                        bgColor={qr.backgroundColor}
+                        fgColor={qr.dotColor}
+                        level="H"
+                        includeMargin={false}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 bg-red-50 border border-red-200 rounded-lg flex items-center justify-center">
+                      <AlertCircle className="h-8 w-8 text-red-400" />
+                    </div>
+                  )}
                 </div>
                 
-                {/* QR Details */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-sm">{getTypeLabel(qr.type)}</span>
+                <div className="flex-grow min-w-0">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <Badge variant="secondary" className="text-xs">
+                      {formatQRType(qr.type)}
+                    </Badge>
                     {qr.hasLogo && (
-                      <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                      <Badge variant="outline" className="text-xs">
                         Logo
-                      </span>
+                      </Badge>
+                    )}
+                    {!isDataValid && (
+                      <Badge variant="destructive" className="text-xs">
+                        Data Too Long
+                      </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 break-words">
-                    {truncateContent(qr.content)}
+                  
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {qr.content.length > 50 ? `${qr.content.substring(0, 50)}...` : qr.content}
                   </p>
-                  <div className="flex items-center gap-1 text-xs text-gray-400 mt-1">
-                    <Calendar className="h-3 w-3" />
+                  
+                  <div className="flex items-center text-xs text-gray-500 mt-1">
+                    <Calendar className="h-3 w-3 mr-1" />
                     {formatDate(qr.createdAt)}
                   </div>
                 </div>
                 
-                {/* Actions */}
-                <div className="flex gap-2 flex-shrink-0">
-                  {qr.url.startsWith('http') && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => window.open(qr.url, '_blank')}
-                      title="Open link"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                  )}
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        title="Delete QR code"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete QR Code</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete this {getTypeLabel(qr.type)} QR code? This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={() => handleDelete(qr.id, qr.type)}
-                          className="bg-red-600 hover:bg-red-700"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => deleteQRFromHistory(qr.id)}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <QrCode className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-            <p className="text-gray-500">No QR codes created yet</p>
-            <p className="text-sm text-gray-400">Your generated QR codes will appear here</p>
-          </div>
-        )}
+            );
+          })}
+        </div>
       </CardContent>
     </Card>
   );
