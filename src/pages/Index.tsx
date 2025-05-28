@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import QRGenerator from "@/components/QRGenerator";
@@ -14,6 +14,23 @@ import { Helmet } from "react-helmet-async";
 const Index = () => {
   const navigate = useNavigate();
   const { isLoggedIn, language } = useUser();
+  
+  // Load homepage ad script
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = '//pl26659143.profitableratecpm.com/60/df/38/60df386dd2cfa2ac4a8c1e4294a705c6.js';
+    script.async = true;
+    
+    document.head.appendChild(script);
+    
+    return () => {
+      // Cleanup script on unmount
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
+    };
+  }, []);
   
   // Redirect to QR type selector if user is logged in
   const handleCreateQRCode = () => {

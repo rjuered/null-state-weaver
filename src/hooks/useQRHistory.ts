@@ -41,8 +41,23 @@ export const useQRHistory = () => {
     localStorage.setItem('qr_history', JSON.stringify(updatedHistory));
   };
 
+  const deleteQRFromHistory = (id: string) => {
+    const updatedHistory = qrHistory.filter(qr => qr.id !== id);
+    setQrHistory(updatedHistory);
+    
+    // Update localStorage
+    localStorage.setItem('qr_history', JSON.stringify(updatedHistory));
+  };
+
+  const clearHistory = () => {
+    setQrHistory([]);
+    localStorage.removeItem('qr_history');
+  };
+
   return {
     qrHistory,
     saveQRToHistory,
+    deleteQRFromHistory,
+    clearHistory,
   };
 };

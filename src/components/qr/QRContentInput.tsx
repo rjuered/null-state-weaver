@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Eye, EyeOff, Upload } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { useToast } from '@/hooks/use-toast';
 
 interface QRContentInputProps {
   qrType: string;
@@ -26,6 +26,7 @@ const QRContentInput = ({ qrType, qrValue, handleContentChange }: QRContentInput
   
   // Image upload state
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const { toast } = useToast();
   
   // Handle WiFi data changes and format the QR content
   const handleWifiChange = (network: string, encryption: string, password: string, hidden: boolean) => {
@@ -39,18 +40,75 @@ const QRContentInput = ({ qrType, qrValue, handleContentChange }: QRContentInput
     handleContentChange(wifiString);
   };
   
-  // Handle image file upload
+  // Handle image file upload with validation
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          variant: "destructive",
+          title: "Invalid File",
+          description: "Please select a valid image file.",
+        });
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          variant: "destructive",
+          title: "File Too Large",
+          description: "Please select an image smaller than 5MB.",
+        });
+        return;
+      }
+      
       setImageFile(file);
       
-      // Create a data URL for the image
+      // Create a data URL for the image with compression
       const reader = new FileReader();
       reader.onload = (event) => {
-        if (event.target) {
-          handleContentChange(event.target.result as string);
+        if (event.target && event.target.result) {
+          const img = new Image();
+          img.onload = () => {
+            // Create canvas for compression
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Calculate new dimensions (max 800x800)
+            let { width, height } = img;
+            const maxDimension = 800;
+            
+            if (width > maxDimension || height > maxDimension) {
+              if (width > height) {
+                height = (height * maxDimension) / width;
+                width = maxDimension;
+              } else {
+                width = (width * maxDimension) / height;
+                height = maxDimension;
+              }
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, width, height);
+              const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+              handleContentChange(compressedDataUrl);
+            }
+          };
+          img.src = event.target.result as string;
         }
+      };
+      reader.onerror = () => {
+        toast({
+          variant: "destructive",
+          title: "Upload Failed",
+          description: "Failed to read the image file.",
+        });
       };
       reader.readAsDataURL(file);
     }
@@ -269,10 +327,10 @@ const QRContentInput = ({ qrType, qrValue, handleContentChange }: QRContentInput
                   className="cursor-pointer flex flex-col items-center justify-center"
                 >
                   <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                  <span className="text-sm text-gray-600">Click to upload image</span>
+                  <span className="text-sm text-gray-600">Click to upload image (max 5MB)</span>
                   {imageFile && (
                     <span className="text-xs text-green-600 mt-1">
-                      {imageFile.name}
+                      {imageFile.name} - Processed
                     </span>
                   )}
                 </label>
