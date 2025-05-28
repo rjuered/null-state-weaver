@@ -66,6 +66,19 @@ const QRGenerator = ({ type = 'url' }) => {
     }
   };
 
+  // Validate QR data length
+  const validateQRDataLength = (data: string, errorLevel: string) => {
+    const maxLengths = {
+      'L': 2953,
+      'M': 2331,
+      'Q': 1663,
+      'H': 1273
+    };
+    
+    const maxLength = maxLengths[errorLevel] || 1273;
+    return data.length <= maxLength;
+  };
+
   const generateQRCode = () => {
     // Check if user is logged in first
     if (!isLoggedIn) {
@@ -103,6 +116,24 @@ const QRGenerator = ({ type = 'url' }) => {
       }
     }
 
+    // Handle password protection
+    let finalURL = qrValue;
+    if (isPasswordProtected && qrPassword) {
+      // Create a password-protected URL (in a real app, this would be a secure backend URL)
+      const encodedData = btoa(JSON.stringify({ content: qrValue, password: qrPassword }));
+      finalURL = `${window.location.origin}/protected?data=${encodedData}`;
+    }
+
+    // Validate QR data length before generating
+    if (!validateQRDataLength(finalURL, level)) {
+      toast({
+        variant: "destructive",
+        title: "Data Too Large",
+        description: "The content is too large for a QR code. Please use shorter content or lower error correction level.",
+      });
+      return false;
+    }
+
     // If user is logged in, increment QR count
     const success = incrementQRCount();
     if (!success) {
@@ -113,15 +144,6 @@ const QRGenerator = ({ type = 'url' }) => {
     triggerAd();
     
     setGenerated(true);
-    
-    // Handle password protection
-    let finalURL = qrValue;
-    if (isPasswordProtected && qrPassword) {
-      // Create a password-protected URL (in a real app, this would be a secure backend URL)
-      const encodedData = btoa(JSON.stringify({ content: qrValue, password: qrPassword }));
-      finalURL = `${window.location.origin}/protected?data=${encodedData}`;
-    }
-    
     setQrURL(finalURL);
 
     // Save to QR history
