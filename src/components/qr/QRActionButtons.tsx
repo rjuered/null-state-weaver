@@ -112,12 +112,40 @@ const QRActionButtons = ({
     }
 
     const svgData = new XMLSerializer().serializeToString(svg);
-    navigator.clipboard.writeText(svgData);
     
-    toast({
-      title: "Copied",
-      description: "QR code copied to clipboard",
-    });
+    // Try to copy as text first (SVG data)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(svgData).then(() => {
+        toast({
+          title: "Copied",
+          description: "QR code copied to clipboard",
+        });
+      }).catch(() => {
+        // Fallback to creating a temporary textarea
+        const textArea = document.createElement("textarea");
+        textArea.value = svgData;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        toast({
+          title: "Copied",
+          description: "QR code copied to clipboard",
+        });
+      });
+    } else {
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = svgData;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      toast({
+        title: "Copied",
+        description: "QR code copied to clipboard",
+      });
+    }
   };
   
   const shareQRCode = async () => {
@@ -135,23 +163,24 @@ const QRActionButtons = ({
     }
 
     try {
-      // For sharing, convert to PNG for better compatibility
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      const img = new Image();
-      const svgData = new XMLSerializer().serializeToString(svg);
-      const svgBlob = new Blob([svgData], { type: "image/svg+xml" });
-      const url = URL.createObjectURL(svgBlob);
-      
-      img.onload = async () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          canvas.toBlob(async (blob) => {
-            if (blob) {
-              const file = new File([blob], "qrcode.png", { type: "image/png" });
-              if (navigator.share) {
+      // Check if Web Share API is supported and we're on HTTPS
+      if (navigator.share && window.location.protocol === 'https:') {
+        // For sharing, convert to PNG for better compatibility
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const img = new Image();
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const svgBlob = new Blob([svgData], { type: "image/svg+xml" });
+        const url = URL.createObjectURL(svgBlob);
+        
+        img.onload = async () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          if (ctx) {
+            ctx.drawImage(img, 0, 0);
+            canvas.toBlob(async (blob) => {
+              if (blob) {
+                const file = new File([blob], "qrcode.png", { type: "image/png" });
                 try {
                   await navigator.share({
                     files: [file],
@@ -164,32 +193,61 @@ const QRActionButtons = ({
                   });
                 } catch (err: any) {
                   if (err.name !== 'AbortError') {
-                    toast({
-                      variant: "destructive",
-                      title: "Share failed",
-                      description: err.message || "Failed to share QR code",
-                    });
+                    // Fallback to copying share URL
+                    fallbackShare();
                   }
                 }
-              } else {
-                toast({
-                  variant: "destructive",
-                  title: "Error",
-                  description: "Web Share API not supported in this browser",
-                });
               }
-            }
-          }, 'image/png');
-        }
-        URL.revokeObjectURL(url);
-      };
-      
-      img.src = url;
+            }, 'image/png');
+          }
+          URL.revokeObjectURL(url);
+        };
+        
+        img.src = url;
+      } else {
+        // Fallback for browsers without Web Share API or HTTP
+        fallbackShare();
+      }
     } catch (error: any) {
+      console.log('Share error:', error);
+      fallbackShare();
+    }
+  };
+
+  const fallbackShare = () => {
+    // Create a shareable URL with the QR content
+    const shareUrl = `${window.location.origin}?shared=${encodeURIComponent(qrValue)}`;
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        toast({
+          title: "Share Link Copied",
+          description: "Share link copied to clipboard",
+        });
+      }).catch(() => {
+        // Final fallback
+        const textArea = document.createElement("textarea");
+        textArea.value = shareUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        toast({
+          title: "Share Link Copied",
+          description: "Share link copied to clipboard",
+        });
+      });
+    } else {
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = shareUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to share QR code",
+        title: "Share Link Copied",
+        description: "Share link copied to clipboard",
       });
     }
   };

@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
@@ -17,19 +18,46 @@ const Index = () => {
   
   // Load homepage ad script
   useEffect(() => {
-    const script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = '//pl26659143.profitableratecpm.com/60/df/38/60df386dd2cfa2ac4a8c1e4294a705c6.js';
-    script.async = true;
-    
-    document.head.appendChild(script);
-    
-    return () => {
-      // Cleanup script on unmount
-      if (document.head.contains(script)) {
-        document.head.removeChild(script);
-      }
-    };
+    try {
+      // Remove any existing ad scripts first
+      const existingScripts = document.querySelectorAll('script[src*="profitableratecpm.com"]');
+      existingScripts.forEach(script => {
+        if (script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+      });
+
+      // Create and add new ad script
+      const script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.src = '//pl26659143.profitableratecpm.com/60/df/38/60df386dd2cfa2ac4a8c1e4294a705c6.js';
+      script.async = true;
+      script.defer = true;
+      
+      // Add error handling
+      script.onerror = () => {
+        console.log('Ad script failed to load');
+      };
+      
+      script.onload = () => {
+        console.log('Ad script loaded successfully');
+      };
+      
+      document.head.appendChild(script);
+      
+      return () => {
+        // Cleanup script on unmount
+        try {
+          if (document.head.contains(script)) {
+            document.head.removeChild(script);
+          }
+        } catch (error) {
+          console.log('Error removing ad script:', error);
+        }
+      };
+    } catch (error) {
+      console.log('Error loading ad script:', error);
+    }
   }, []);
   
   // Redirect to QR type selector if user is logged in

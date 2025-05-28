@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -24,29 +25,34 @@ const ProfilePage = () => {
   }, [isLoggedIn, navigate]);
 
   useEffect(() => {
+    if (!subscriptionEndDate) return;
+    
     // Update time remaining every second
     const calculateTimeRemaining = () => {
-      if (!subscriptionEndDate) return null;
-      
-      const end = new Date(subscriptionEndDate);
-      const now = new Date();
-      const diff = end.getTime() - now.getTime();
-      
-      if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
-      
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-      
-      return { days, hours, minutes, seconds };
+      try {
+        const end = new Date(subscriptionEndDate);
+        const now = new Date();
+        const diff = end.getTime() - now.getTime();
+        
+        if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+        
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        return { days, hours, minutes, seconds };
+      } catch (error) {
+        console.error('Error calculating time remaining:', error);
+        return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+      }
     };
     
     setTimeRemaining(calculateTimeRemaining());
     
     const timer = setInterval(() => {
       setTimeRemaining(calculateTimeRemaining());
-    }, 1000); // Update every second
+    }, 1000);
     
     return () => clearInterval(timer);
   }, [subscriptionEndDate]);
@@ -54,7 +60,7 @@ const ProfilePage = () => {
   // Calculate days remaining if on a paid plan
   const daysRemaining = timeRemaining?.days || 0;
   const percentageRemaining = subscriptionEndDate ? 
-    Math.floor((daysRemaining / 30) * 100) : 0;
+    Math.max(0, Math.min(100, Math.floor((daysRemaining / 30) * 100))) : 0;
 
   const getSubscriptionBadgeColor = () => {
     switch(subscription) {
@@ -78,6 +84,22 @@ const ProfilePage = () => {
   const formatTimeUnit = (unit: number) => {
     return unit < 10 ? `0${unit}` : `${unit}`;
   };
+
+  // Show loading state while checking authentication
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <div className="flex-grow flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -111,7 +133,7 @@ const ProfilePage = () => {
               <CardContent className="space-y-4 pt-2">
                 <div>
                   <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{user?.email}</p>
+                  <p className="font-medium">{user?.email || 'No email available'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Member since</p>
@@ -146,7 +168,7 @@ const ProfilePage = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  {subscription !== 'free' && subscriptionEndDate && (
+                  {subscription !== 'free' && subscriptionEndDate && timeRemaining && (
                     <>
                       <div className="bg-gradient-to-r from-purple-100 to-indigo-100 p-6 rounded-lg">
                         <h3 className="text-lg font-semibold mb-4 flex items-center">
@@ -156,19 +178,19 @@ const ProfilePage = () => {
                         
                         <div className="grid grid-cols-4 gap-3 mb-4">
                           <div className="bg-white p-3 rounded-lg shadow-sm text-center">
-                            <div className="text-3xl font-bold text-qrito-purple">{formatTimeUnit(timeRemaining?.days || 0)}</div>
+                            <div className="text-3xl font-bold text-qrito-purple">{formatTimeUnit(timeRemaining.days)}</div>
                             <div className="text-xs uppercase text-gray-500 mt-1">Days</div>
                           </div>
                           <div className="bg-white p-3 rounded-lg shadow-sm text-center">
-                            <div className="text-3xl font-bold text-qrito-purple">{formatTimeUnit(timeRemaining?.hours || 0)}</div>
+                            <div className="text-3xl font-bold text-qrito-purple">{formatTimeUnit(timeRemaining.hours)}</div>
                             <div className="text-xs uppercase text-gray-500 mt-1">Hours</div>
                           </div>
                           <div className="bg-white p-3 rounded-lg shadow-sm text-center">
-                            <div className="text-3xl font-bold text-qrito-purple">{formatTimeUnit(timeRemaining?.minutes || 0)}</div>
+                            <div className="text-3xl font-bold text-qrito-purple">{formatTimeUnit(timeRemaining.minutes)}</div>
                             <div className="text-xs uppercase text-gray-500 mt-1">Minutes</div>
                           </div>
                           <div className="bg-white p-3 rounded-lg shadow-sm text-center">
-                            <div className="text-3xl font-bold text-qrito-purple">{formatTimeUnit(timeRemaining?.seconds || 0)}</div>
+                            <div className="text-3xl font-bold text-qrito-purple">{formatTimeUnit(timeRemaining.seconds)}</div>
                             <div className="text-xs uppercase text-gray-500 mt-1">Seconds</div>
                           </div>
                         </div>
@@ -245,9 +267,9 @@ const ProfilePage = () => {
                     <>
                       <div className="flex items-center">
                         <QrCode className="mr-2 h-4 w-4 text-muted-foreground" />
-                        <span>{qrCodesGenerated}/5 QR codes created</span>
+                        <span>{qrCodesGenerated || 0}/5 QR codes created</span>
                       </div>
-                      {qrCodesGenerated >= 5 && (
+                      {(qrCodesGenerated || 0) >= 5 && (
                         <div className="p-4 bg-amber-50 border border-amber-200 rounded-md text-amber-800">
                           You've reached your limit of 5 QR codes. Upgrade your plan to create more.
                         </div>
@@ -290,7 +312,7 @@ const ProfilePage = () => {
               </CardFooter>
             </Card>
 
-            {/* QR Code History - Replace the old QR Code History card */}
+            {/* QR Code History */}
             <div className="col-span-1 md:col-span-3">
               <QRHistoryCard />
             </div>
