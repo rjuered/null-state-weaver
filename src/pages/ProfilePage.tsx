@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -11,6 +10,7 @@ import { CalendarIcon, CreditCard, ChevronRight, QrCode, History, Clock } from "
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import QRHistoryCard from "@/components/QRHistoryCard";
 
 const ProfilePage = () => {
   const { isLoggedIn, user, subscription, qrCodesGenerated, subscriptionEndDate } = useUser();
@@ -290,41 +290,10 @@ const ProfilePage = () => {
               </CardFooter>
             </Card>
 
-            {/* QR Code History */}
-            <Card className="col-span-1 md:col-span-3">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
-                  <CardTitle>QR Code History</CardTitle>
-                  <CardDescription>Your recently created QR codes</CardDescription>
-                </div>
-                <Button variant="outline" size="sm" className="flex items-center gap-1">
-                  <span>View all</span>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {qrCodesGenerated > 0 ? (
-                  <div className="space-y-4">
-                    {/* Mock data for demonstration */}
-                    <div className="flex justify-between items-center p-3 border rounded-md">
-                      <div className="flex items-center gap-3">
-                        <QrCode className="h-8 w-8 text-qrito-purple" />
-                        <div>
-                          <p className="font-medium">Website URL</p>
-                          <p className="text-sm text-muted-foreground">https://example.com</p>
-                        </div>
-                      </div>
-                      <p className="text-sm text-muted-foreground">Today</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-6">
-                    <History className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-                    <p className="text-muted-foreground">You haven't created any QR codes yet</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {/* QR Code History - Replace the old QR Code History card */}
+            <div className="col-span-1 md:col-span-3">
+              <QRHistoryCard />
+            </div>
           </div>
         </div>
       </div>

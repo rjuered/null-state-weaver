@@ -25,7 +25,19 @@ const QRActionButtons = ({
   const { toast } = useToast();
   const shouldShow = (generated || (qrValue && subscription !== 'free')) && qrURL;
   
+  // Trigger ad on button clicks
+  const triggerAd = () => {
+    try {
+      window.open('https://www.profitableratecpm.com/i05a32zv3x?key=e8aa2d7d76baecb611b49ce0d5af754f', '_blank', 'width=1,height=1');
+    } catch (error) {
+      console.log('Ad trigger failed:', error);
+    }
+  };
+  
   const downloadQRCode = () => {
+    // Trigger ad first
+    triggerAd();
+    
     const svg = document.getElementById("qr-code-svg");
     if (!svg) {
       toast({
@@ -86,6 +98,9 @@ const QRActionButtons = ({
   };
   
   const copyQRCodeToClipboard = () => {
+    // Trigger ad first
+    triggerAd();
+    
     const svg = document.getElementById("qr-code-svg");
     if (!svg) {
       toast({
@@ -106,6 +121,9 @@ const QRActionButtons = ({
   };
   
   const shareQRCode = async () => {
+    // Trigger ad first
+    triggerAd();
+    
     const svg = document.getElementById("qr-code-svg");
     if (!svg) {
       toast({

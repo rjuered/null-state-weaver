@@ -60,6 +60,48 @@ const ProtectedQR = () => {
     }
   };
 
+  const renderContent = () => {
+    if (content.startsWith('http')) {
+      return (
+        <a 
+          href={content} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="text-blue-600 hover:underline break-all"
+        >
+          {content}
+        </a>
+      );
+    }
+    
+    // Handle email content
+    if (content.includes('@') && content.includes('.')) {
+      return (
+        <a 
+          href={`mailto:${content}`} 
+          className="text-blue-600 hover:underline break-all"
+        >
+          {content}
+        </a>
+      );
+    }
+    
+    // Handle phone numbers
+    if (content.match(/^\+?[\d\s\-\(\)]+$/)) {
+      return (
+        <a 
+          href={`tel:${content}`} 
+          className="text-blue-600 hover:underline"
+        >
+          {content}
+        </a>
+      );
+    }
+    
+    // For other content types (text, contact info, etc.)
+    return <p className="whitespace-pre-wrap break-all">{content}</p>;
+  };
+
   if (isUnlocked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -70,14 +112,8 @@ const ProtectedQR = () => {
                 <Eye className="h-8 w-8 text-green-600" />
               </div>
               <h2 className="text-2xl font-bold mb-4">Content Unlocked</h2>
-              <div className="bg-gray-100 p-4 rounded-lg break-all">
-                {content.startsWith('http') ? (
-                  <a href={content} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                    {content}
-                  </a>
-                ) : (
-                  <p>{content}</p>
-                )}
+              <div className="bg-gray-100 p-4 rounded-lg text-left">
+                {renderContent()}
               </div>
             </div>
           </CardContent>
@@ -106,6 +142,7 @@ const ProtectedQR = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleUnlock()}
                   className="pr-10"
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"

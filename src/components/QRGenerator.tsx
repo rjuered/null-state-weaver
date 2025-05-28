@@ -3,6 +3,7 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useUser } from '@/context';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useQRHistory } from '@/hooks/useQRHistory';
 
 // Import smaller components
 import QRContentCard from './qr/QRContentCard';
@@ -41,6 +42,7 @@ const QRGenerator = ({ type = 'url' }) => {
   
   const location = useLocation();
   const navigate = useNavigate();
+  const { saveQRToHistory } = useQRHistory();
 
   // Get the QR type from URL if available
   const searchParams = new URLSearchParams(location.search);
@@ -85,6 +87,22 @@ const QRGenerator = ({ type = 'url' }) => {
       return false;
     }
 
+    // Validate image URLs properly
+    if (qrType === 'image') {
+      // Check if it's a valid URL or a data URL from file upload
+      const isValidURL = qrValue.startsWith('http') || qrValue.startsWith('https');
+      const isDataURL = qrValue.startsWith('data:image/');
+      
+      if (!isValidURL && !isDataURL) {
+        toast({
+          variant: "destructive",
+          title: "Invalid Image",
+          description: "Please provide a valid image URL or upload an image file",
+        });
+        return false;
+      }
+    }
+
     // If user is logged in, increment QR count
     const success = incrementQRCount();
     if (!success) {
@@ -105,6 +123,17 @@ const QRGenerator = ({ type = 'url' }) => {
     }
     
     setQrURL(finalURL);
+
+    // Save to QR history
+    saveQRToHistory({
+      type: qrType,
+      content: qrValue,
+      url: finalURL,
+      dotColor,
+      backgroundColor,
+      hasLogo: !!logo,
+    });
+    
     return true;
   };
 

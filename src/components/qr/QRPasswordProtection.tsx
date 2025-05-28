@@ -70,9 +70,10 @@ const QRPasswordProtection = ({
                 value={password}
                 onChange={(e) => onPasswordChange(e.target.value)}
                 className="mt-1"
+                autoComplete="new-password"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Users will need this password to access the QR code content
+                Users will need this password to access the QR code content. Works with all QR code types.
               </p>
             </div>
           )}
