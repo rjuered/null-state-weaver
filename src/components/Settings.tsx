@@ -9,7 +9,7 @@ import { useUser } from "@/context";
 import { useToast } from "@/hooks/use-toast";
 
 const Settings = () => {
-  const { user, language, setLanguage } = useUser();
+  const { user, language, switchLanguage } = useUser();
   const { toast } = useToast();
   const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
@@ -29,7 +29,7 @@ const Settings = () => {
 
   const handleLanguageToggle = () => {
     const newLang = language === "en" ? "ar" : "en";
-    setLanguage(newLang);
+    switchLanguage(newLang);
     toast({
       title: language === "en" ? "Language Changed" : "تم تغيير اللغة",
       description: language === "en" ? "Language switched to Arabic" : "Language switched to English",
