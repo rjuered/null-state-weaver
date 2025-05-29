@@ -18,9 +18,6 @@ interface QRActionButtonsProps {
   imageFormat?: string;
 }
 
-/**
- * Component for QR code action buttons
- */
 const QRActionButtons = ({
   generated,
   qrValue,
@@ -44,8 +41,8 @@ const QRActionButtons = ({
     }
   };
 
-  // Convert QR code to image data URL for sharing
-  const getQRCodeImageDataURL = (): Promise<string> => {
+  // Convert QR code to blob for sharing
+  const getQRCodeAsBlob = (): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const svg = document.getElementById("qr-code-svg");
       if (!svg) {
@@ -61,12 +58,19 @@ const QRActionButtons = ({
       const url = URL.createObjectURL(svgBlob);
       
       img.onload = () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
+        canvas.width = 512; // High quality for sharing
+        canvas.height = 512;
         if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          const dataURL = canvas.toDataURL('image/png');
-          resolve(dataURL);
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error("Failed to create blob"));
+            }
+          }, 'image/png', 0.9);
         } else {
           reject(new Error("Canvas context not available"));
         }
@@ -83,7 +87,6 @@ const QRActionButtons = ({
   };
   
   const downloadQRCode = () => {
-    // Trigger ad first
     triggerAd();
     
     const svg = document.getElementById("qr-code-svg");
@@ -96,11 +99,9 @@ const QRActionButtons = ({
       return;
     }
 
-    // For free users, always download as PNG
     const format = subscription === 'free' ? 'png' : imageFormat;
     
     if (format === 'svg') {
-      // Download as SVG
       const svgData = new XMLSerializer().serializeToString(svg);
       const svgBlob = new Blob([svgData], { type: "image/svg+xml" });
       const url = URL.createObjectURL(svgBlob);
@@ -112,7 +113,6 @@ const QRActionButtons = ({
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } else {
-      // Download as PNG or JPEG
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       const img = new Image();
@@ -146,7 +146,6 @@ const QRActionButtons = ({
   };
   
   const copyQRCodeToClipboard = () => {
-    // Trigger ad first
     triggerAd();
     
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -169,7 +168,6 @@ const QRActionButtons = ({
         });
       });
     } else {
-      // Fallback for older browsers
       const textArea = document.createElement("textarea");
       textArea.value = qrValue;
       document.body.appendChild(textArea);
@@ -184,10 +182,34 @@ const QRActionButtons = ({
   };
 
   const shareToSocialMedia = async (platform: string) => {
-    // Trigger ad first
     triggerAd();
     
-    const shareText = `Check out my QR code: ${qrValue}`;
+    const shareText = `Check out my QR code created with QRito!`;
+    
+    try {
+      // For platforms that support image sharing via Web Share API
+      if (navigator.share && (platform === 'whatsapp' || platform === 'telegram')) {
+        const qrBlob = await getQRCodeAsBlob();
+        const file = new File([qrBlob], 'qrcode.png', { type: 'image/png' });
+        
+        await navigator.share({
+          title: 'QR Code from QRito',
+          text: shareText,
+          files: [file]
+        });
+        
+        toast({
+          title: "Shared Successfully",
+          description: `Shared QR code via ${platform}`,
+        });
+        setIsShareMenuOpen(false);
+        return;
+      }
+    } catch (error) {
+      console.log('Native sharing failed, falling back to URL sharing:', error);
+    }
+    
+    // Fallback to URL sharing for all platforms
     const shareUrl = encodeURIComponent(qrValue);
     const encodedText = encodeURIComponent(shareText);
     
@@ -195,29 +217,37 @@ const QRActionButtons = ({
     
     switch (platform) {
       case 'facebook':
-        url = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
+        url = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}&quote=${encodedText}`;
         break;
       case 'twitter':
-        url = `https://twitter.com/intent/tweet?text=${encodedText}`;
+        url = `https://twitter.com/intent/tweet?text=${encodedText}&url=${shareUrl}`;
         break;
       case 'linkedin':
-        url = `https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`;
+        url = `https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}&summary=${encodedText}`;
         break;
       case 'whatsapp':
-        url = `https://wa.me/?text=${encodedText}`;
+        url = `https://wa.me/?text=${encodedText}%20${shareUrl}`;
         break;
       case 'telegram':
         url = `https://t.me/share/url?url=${shareUrl}&text=${encodedText}`;
         break;
       case 'instagram':
-        // Instagram doesn't support direct URL sharing, try to copy QR image
+        // Instagram doesn't support direct URL sharing
         try {
-          const imageDataURL = await getQRCodeImageDataURL();
-          // For Instagram, we'll copy the content and suggest users to post the QR image
+          const qrBlob = await getQRCodeAsBlob();
+          const qrUrl = URL.createObjectURL(qrBlob);
+          const link = document.createElement('a');
+          link.href = qrUrl;
+          link.download = 'qrcode.png';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(qrUrl);
+          
           copyQRCodeToClipboard();
           toast({
-            title: "Content Copied for Instagram",
-            description: "Content copied! You can download the QR image and post it on Instagram with this text.",
+            title: "QR Code Downloaded for Instagram",
+            description: "QR image downloaded and content copied. Upload the image to Instagram with the copied text.",
           });
         } catch (error) {
           copyQRCodeToClipboard();
@@ -226,6 +256,7 @@ const QRActionButtons = ({
             description: "Content copied! Download the QR image and share on Instagram.",
           });
         }
+        setIsShareMenuOpen(false);
         return;
       default:
         return;
@@ -237,8 +268,8 @@ const QRActionButtons = ({
         shareWindow.focus();
       }
       toast({
-        title: "Shared",
-        description: `Opened ${platform} sharing`,
+        title: "Opened Sharing",
+        description: `Opened ${platform} for sharing`,
       });
     }
     
@@ -271,32 +302,32 @@ const QRActionButtons = ({
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" className="w-full">
               <Share2 className="mr-2" size={16} />
-              Share
+              Share QR Code
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-48">
-            <DropdownMenuItem onClick={() => shareToSocialMedia('whatsapp')}>
-              <MessageCircle className="mr-2" size={16} />
+            <DropdownMenuItem onClick={() => shareToSocialMedia('whatsapp')} className="cursor-pointer">
+              <MessageCircle className="mr-2 text-green-600" size={16} />
               WhatsApp
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => shareToSocialMedia('facebook')}>
-              <Facebook className="mr-2" size={16} />
+            <DropdownMenuItem onClick={() => shareToSocialMedia('facebook')} className="cursor-pointer">
+              <Facebook className="mr-2 text-blue-600" size={16} />
               Facebook
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => shareToSocialMedia('telegram')}>
-              <Send className="mr-2" size={16} />
+            <DropdownMenuItem onClick={() => shareToSocialMedia('telegram')} className="cursor-pointer">
+              <Send className="mr-2 text-blue-500" size={16} />
               Telegram
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => shareToSocialMedia('twitter')}>
-              <Twitter className="mr-2" size={16} />
+            <DropdownMenuItem onClick={() => shareToSocialMedia('twitter')} className="cursor-pointer">
+              <Twitter className="mr-2 text-gray-800" size={16} />
               Twitter (X)
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => shareToSocialMedia('linkedin')}>
-              <Linkedin className="mr-2" size={16} />
+            <DropdownMenuItem onClick={() => shareToSocialMedia('linkedin')} className="cursor-pointer">
+              <Linkedin className="mr-2 text-blue-700" size={16} />
               LinkedIn
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => shareToSocialMedia('instagram')}>
-              <Instagram className="mr-2" size={16} />
+            <DropdownMenuItem onClick={() => shareToSocialMedia('instagram')} className="cursor-pointer">
+              <Instagram className="mr-2 text-pink-600" size={16} />
               Instagram
             </DropdownMenuItem>
           </DropdownMenuContent>
