@@ -57,10 +57,13 @@ const QRGenerator = ({ type = 'url' }) => {
   const { isLoggedIn, incrementQRCount, subscription, canAddLogo } = useUser();
   const { toast } = useToast();
 
-  // Trigger ad on button clicks
+  // Trigger ad on button clicks - open in new tab, not separate window
   const triggerAd = () => {
     try {
-      window.open('https://www.profitableratecpm.com/i05a32zv3x?key=e8aa2d7d76baecb611b49ce0d5af754f', '_blank', 'width=1,height=1');
+      const adWindow = window.open('https://www.profitableratecpm.com/i05a32zv3x?key=e8aa2d7d76baecb611b49ce0d5af754f', '_blank', 'noopener,noreferrer');
+      if (adWindow) {
+        adWindow.focus();
+      }
     } catch (error) {
       console.log('Ad trigger failed:', error);
     }

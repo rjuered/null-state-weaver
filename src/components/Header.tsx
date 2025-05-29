@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -24,6 +25,24 @@ const Header = () => {
   const handleLogout = () => {
     logout();
     navigate("/login");
+  };
+
+  // Function to get user initial from name or email
+  const getUserInitial = () => {
+    if (!user) return "U";
+    
+    // Try to get initial from user name first
+    if ((user as any).name) {
+      return (user as any).name.charAt(0).toUpperCase();
+    }
+    
+    // Fallback to email first character
+    if (user.email) {
+      return user.email.charAt(0).toUpperCase();
+    }
+    
+    // Final fallback
+    return "U";
   };
 
   return (
@@ -61,7 +80,7 @@ const Header = () => {
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={(user as any).avatarUrl || ''} />
                       <AvatarFallback className="bg-qrito-purple text-white">
-                        {((user as any).name || "U")?.charAt(0)}
+                        {getUserInitial()}
                       </AvatarFallback>
                     </Avatar>
                   </Button>

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Download, Copy, Share2, Facebook, Twitter, MessageCircle, Send, Instagram } from 'lucide-react';
+import { Download, Copy, Share2, Facebook, Twitter, MessageCircle, Send, Instagram, Linkedin } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -32,10 +32,9 @@ const QRActionButtons = ({
   const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
   const shouldShow = (generated || (qrValue && subscription !== 'free')) && qrURL;
   
-  // Trigger ad in same window as tab (not separate window)
+  // Trigger ad in new tab (not separate window)
   const triggerAd = () => {
     try {
-      // Open in same window as a tab, not separate window
       const adWindow = window.open('https://www.profitableratecpm.com/i05a32zv3x?key=e8aa2d7d76baecb611b49ce0d5af754f', '_blank', 'noopener,noreferrer');
       if (adWindow) {
         adWindow.focus();
@@ -43,6 +42,44 @@ const QRActionButtons = ({
     } catch (error) {
       console.log('Ad trigger failed:', error);
     }
+  };
+
+  // Convert QR code to image data URL for sharing
+  const getQRCodeImageDataURL = (): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const svg = document.getElementById("qr-code-svg");
+      if (!svg) {
+        reject(new Error("QR code not found"));
+        return;
+      }
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const img = new Image();
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const svgBlob = new Blob([svgData], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(svgBlob);
+      
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          const dataURL = canvas.toDataURL('image/png');
+          resolve(dataURL);
+        } else {
+          reject(new Error("Canvas context not available"));
+        }
+        URL.revokeObjectURL(url);
+      };
+      
+      img.onerror = () => {
+        reject(new Error("Failed to load QR code image"));
+        URL.revokeObjectURL(url);
+      };
+      
+      img.src = url;
+    });
   };
   
   const downloadQRCode = () => {
@@ -146,7 +183,7 @@ const QRActionButtons = ({
     }
   };
 
-  const shareToSocialMedia = (platform: string) => {
+  const shareToSocialMedia = async (platform: string) => {
     // Trigger ad first
     triggerAd();
     
@@ -163,6 +200,9 @@ const QRActionButtons = ({
       case 'twitter':
         url = `https://twitter.com/intent/tweet?text=${encodedText}`;
         break;
+      case 'linkedin':
+        url = `https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`;
+        break;
       case 'whatsapp':
         url = `https://wa.me/?text=${encodedText}`;
         break;
@@ -170,19 +210,32 @@ const QRActionButtons = ({
         url = `https://t.me/share/url?url=${shareUrl}&text=${encodedText}`;
         break;
       case 'instagram':
-        // Instagram doesn't support direct URL sharing, copy to clipboard instead
-        copyQRCodeToClipboard();
-        toast({
-          title: "Content Copied",
-          description: "Content copied! Open Instagram and paste in your story or post",
-        });
+        // Instagram doesn't support direct URL sharing, try to copy QR image
+        try {
+          const imageDataURL = await getQRCodeImageDataURL();
+          // For Instagram, we'll copy the content and suggest users to post the QR image
+          copyQRCodeToClipboard();
+          toast({
+            title: "Content Copied for Instagram",
+            description: "Content copied! You can download the QR image and post it on Instagram with this text.",
+          });
+        } catch (error) {
+          copyQRCodeToClipboard();
+          toast({
+            title: "Content Copied",
+            description: "Content copied! Download the QR image and share on Instagram.",
+          });
+        }
         return;
       default:
         return;
     }
     
     if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      const shareWindow = window.open(url, '_blank', 'noopener,noreferrer');
+      if (shareWindow) {
+        shareWindow.focus();
+      }
       toast({
         title: "Shared",
         description: `Opened ${platform} sharing`,
@@ -222,13 +275,13 @@ const QRActionButtons = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-48">
-            <DropdownMenuItem onClick={() => shareToSocialMedia('facebook')}>
-              <Facebook className="mr-2" size={16} />
-              Facebook
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => shareToSocialMedia('whatsapp')}>
               <MessageCircle className="mr-2" size={16} />
               WhatsApp
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => shareToSocialMedia('facebook')}>
+              <Facebook className="mr-2" size={16} />
+              Facebook
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => shareToSocialMedia('telegram')}>
               <Send className="mr-2" size={16} />
@@ -237,6 +290,10 @@ const QRActionButtons = ({
             <DropdownMenuItem onClick={() => shareToSocialMedia('twitter')}>
               <Twitter className="mr-2" size={16} />
               Twitter (X)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => shareToSocialMedia('linkedin')}>
+              <Linkedin className="mr-2" size={16} />
+              LinkedIn
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => shareToSocialMedia('instagram')}>
               <Instagram className="mr-2" size={16} />
