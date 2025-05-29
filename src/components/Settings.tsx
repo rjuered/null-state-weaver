@@ -7,10 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { useUser } from "@/context";
 import { useToast } from "@/hooks/use-toast";
+import { User, CreditCard, Bell, Palette, Globe } from "lucide-react";
 
 const Settings = () => {
   const { user, language, switchLanguage } = useUser();
   const { toast } = useToast();
+  const [activeSection, setActiveSection] = useState("profile");
   const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(false);
@@ -36,145 +38,232 @@ const Settings = () => {
     });
   };
 
-  return (
-    <div className="max-w-4xl mx-auto space-y-6" dir={language === "ar" ? "rtl" : "ltr"}>
-      {/* Profile Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("Profile Settings", "إعدادات الملف الشخصي")}</CardTitle>
-          <CardDescription>
-            {t("Manage your account information and preferences.", "إدارة معلومات حسابك وتفضيلاتك.")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="email">{t("Email", "البريد الإلكتروني")}</Label>
-              <Input
-                id="email"
-                type="email"
-                value={user?.email || ""}
-                disabled
-                className="bg-gray-50"
-              />
-            </div>
-            <div>
-              <Label htmlFor="name">{t("Full Name", "الاسم الكامل")}</Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder={t("Enter your full name", "أدخل اسمك الكامل")}
-              />
-            </div>
-          </div>
+  const sidebarItems = [
+    { id: "profile", label: t("Profile", "الملف الشخصي"), icon: User },
+    { id: "notifications", label: t("Notifications", "الإشعارات"), icon: Bell },
+    { id: "appearance", label: t("Appearance", "المظهر"), icon: Palette },
+    { id: "language", label: t("Language", "اللغة"), icon: Globe },
+  ];
+
+  const renderProfileSection = () => (
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
+        <h2 className="text-2xl font-semibold mb-2">{t("Profile Settings", "إعدادات الملف الشخصي")}</h2>
+        <p className="text-purple-100">{t("Manage your account information", "إدارة معلومات حسابك")}</p>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="fullname" className="text-sm font-medium">{t("Full Name", "الاسم الكامل")}</Label>
+          <Input
+            id="fullname"
+            type="text"
+            placeholder={t("شركتي للحلول التجارية", "My Business Solutions")}
+            className="mt-1"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="email" className="text-sm font-medium">{t("Email Address", "البريد الإلكتروني")}</Label>
+          <Input
+            id="email"
+            type="email"
+            value={user?.email || "garipe3558@nutrv.com"}
+            disabled
+            className="mt-1 bg-gray-50 dark:bg-gray-800"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="company" className="text-sm font-medium">{t("Company", "الشركة")}</Label>
+          <Input
+            id="company"
+            type="text"
+            placeholder={t("Features That Make a Difference", "الميزات التي تحدث فرقاً")}
+            className="mt-1"
+          />
+        </div>
+
+        <Button className="bg-purple-500 hover:bg-purple-600 text-white">
+          {t("Save Profile Changes", "حفظ تغييرات الملف الشخصي")}
+        </Button>
+      </div>
+
+      <div className="border-t pt-6">
+        <h3 className="text-lg font-semibold mb-4">{t("Password", "كلمة المرور")}</h3>
+        <Button variant="outline" className="text-purple-600 border-purple-600 hover:bg-purple-50">
+          {t("Change Password", "تغيير كلمة المرور")}
+        </Button>
+      </div>
+
+      <div className="border-t pt-6">
+        <h3 className="text-lg font-semibold mb-4 text-red-600">{t("Danger Zone", "منطقة الخطر")}</h3>
+        <Button variant="destructive">
+          {t("Delete Account", "حذف الحساب")}
+        </Button>
+      </div>
+    </div>
+  );
+
+  const renderNotificationsSection = () => (
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
+        <h2 className="text-2xl font-semibold mb-2">{t("Notifications", "الإشعارات")}</h2>
+        <p className="text-purple-100">{t("Manage your notification preferences", "إدارة تفضيلات الإشعارات")}</p>
+      </div>
+
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
           <div>
-            <Label htmlFor="company">{t("Company (Optional)", "الشركة (اختياري)")}</Label>
-            <Input
-              id="company"
-              type="text"
-              placeholder={t("Enter your company name", "أدخل اسم شركتك")}
-            />
+            <Label htmlFor="push-notifications">{t("Push Notifications", "الإشعارات الفورية")}</Label>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              {t("Receive notifications about your QR codes", "تلقي إشعارات حول رموز QR الخاصة بك")}
+            </p>
           </div>
-        </CardContent>
-      </Card>
+          <Switch
+            id="push-notifications"
+            checked={notifications}
+            onCheckedChange={setNotifications}
+          />
+        </div>
 
-      {/* App Preferences */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("App Preferences", "تفضيلات التطبيق")}</CardTitle>
-          <CardDescription>
-            {t("Customize your app experience.", "تخصيص تجربة التطبيق الخاصة بك.")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="language">{t("Language", "اللغة")}</Label>
-              <p className="text-sm text-gray-600">
-                {t("Switch between English and Arabic", "التبديل بين الإنجليزية والعربية")}
-              </p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm">EN</span>
-              <Switch
-                id="language"
-                checked={language === "ar"}
-                onCheckedChange={handleLanguageToggle}
-              />
-              <span className="text-sm">AR</span>
-            </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <Label htmlFor="email-updates">{t("Email Updates", "تحديثات البريد الإلكتروني")}</Label>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              {t("Receive product updates and news via email", "تلقي تحديثات المنتج والأخبار عبر البريد الإلكتروني")}
+            </p>
           </div>
+          <Switch
+            id="email-updates"
+            checked={emailUpdates}
+            onCheckedChange={setEmailUpdates}
+          />
+        </div>
+      </div>
+    </div>
+  );
 
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="dark-mode">{t("Dark Mode", "الوضع المظلم")}</Label>
-              <p className="text-sm text-gray-600">
-                {t("Switch to dark theme for better night viewing", "التبديل إلى المظهر المظلم لرؤية أفضل ليلاً")}
-              </p>
-            </div>
+  const renderAppearanceSection = () => (
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
+        <h2 className="text-2xl font-semibold mb-2">{t("Appearance", "المظهر")}</h2>
+        <p className="text-purple-100">{t("Customize your app experience", "تخصيص تجربة التطبيق")}</p>
+      </div>
+
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label htmlFor="dark-mode">{t("Dark Mode", "الوضع المظلم")}</Label>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              {t("Switch to dark theme for better night viewing", "التبديل إلى المظهر المظلم لرؤية أفضل ليلاً")}
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm">☀️</span>
             <Switch
               id="dark-mode"
               checked={darkMode}
               onCheckedChange={setDarkMode}
             />
+            <span className="text-sm">🌙</span>
           </div>
+        </div>
+      </div>
+    </div>
+  );
 
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="notifications">{t("Push Notifications", "الإشعارات")}</Label>
-              <p className="text-sm text-gray-600">
-                {t("Receive notifications about your QR codes", "تلقي إشعارات حول رموز QR الخاصة بك")}
-              </p>
-            </div>
+  const renderLanguageSection = () => (
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
+        <h2 className="text-2xl font-semibold mb-2">{t("Language", "اللغة")}</h2>
+        <p className="text-purple-100">{t("Choose your preferred language", "اختر لغتك المفضلة")}</p>
+      </div>
+
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label htmlFor="language-switch">{t("Language", "اللغة")}</Label>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              {t("Switch between English and Arabic", "التبديل بين الإنجليزية والعربية")}
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm">EN</span>
             <Switch
-              id="notifications"
-              checked={notifications}
-              onCheckedChange={setNotifications}
+              id="language-switch"
+              checked={language === "ar"}
+              onCheckedChange={handleLanguageToggle}
             />
+            <span className="text-sm">AR</span>
           </div>
+        </div>
+      </div>
+    </div>
+  );
 
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="email-updates">{t("Email Updates", "تحديثات البريد الإلكتروني")}</Label>
-              <p className="text-sm text-gray-600">
-                {t("Receive product updates and news via email", "تلقي تحديثات المنتج والأخبار عبر البريد الإلكتروني")}
-              </p>
-            </div>
-            <Switch
-              id="email-updates"
-              checked={emailUpdates}
-              onCheckedChange={setEmailUpdates}
-            />
+  const renderContent = () => {
+    switch (activeSection) {
+      case "profile":
+        return renderProfileSection();
+      case "notifications":
+        return renderNotificationsSection();
+      case "appearance":
+        return renderAppearanceSection();
+      case "language":
+        return renderLanguageSection();
+      default:
+        return renderProfileSection();
+    }
+  };
+
+  return (
+    <div className="flex h-full" dir={language === "ar" ? "rtl" : "ltr"}>
+      {/* Sidebar */}
+      <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-6">
+        {/* User Profile Header */}
+        <div className="flex items-center space-x-3 mb-8">
+          <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+            {user?.email?.charAt(0).toUpperCase() || "U"}
           </div>
-        </CardContent>
-      </Card>
+          <div>
+            <h3 className="font-semibold text-gray-900 dark:text-white">
+              {t("شركتي للحلول التجارية", "My Business Solutions")}
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              {user?.email || "garipe3558@nutrv.com"}
+            </p>
+          </div>
+        </div>
 
-      {/* Privacy & Security */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("Privacy & Security", "الخصوصية والأمان")}</CardTitle>
-          <CardDescription>
-            {t("Manage your privacy and security settings.", "إدارة إعدادات الخصوصية والأمان الخاصة بك.")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Button variant="outline" className="w-full">
-            {t("Change Password", "تغيير كلمة المرور")}
-          </Button>
-          <Button variant="outline" className="w-full">
-            {t("Download My Data", "تنزيل بياناتي")}
-          </Button>
-          <Button variant="destructive" className="w-full">
-            {t("Delete Account", "حذف الحساب")}
-          </Button>
-        </CardContent>
-      </Card>
+        {/* Navigation */}
+        <nav className="space-y-2">
+          {sidebarItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveSection(item.id)}
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
+                  activeSection === item.id
+                    ? "bg-purple-500 text-white"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                <span>{item.label}</span>
+                {activeSection === item.id && (
+                  <span className="ml-auto">→</span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
 
-      {/* Save Changes Button */}
-      <div className="flex justify-end">
-        <Button onClick={handleSaveChanges} className="bg-qrito-purple hover:bg-qrito-purple-dark">
-          {t("Save Changes", "حفظ التغييرات")}
-        </Button>
+      {/* Main Content */}
+      <div className="flex-1 p-8">
+        {renderContent()}
       </div>
     </div>
   );
