@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -216,7 +215,7 @@ const Settings = () => {
             />
           </div>
 
-          <div className="flex items-center justify-between p-4 rounde-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300">
             <div>
               <h4 className="font-semibold text-gray-900 dark:text-white">{t("Marketing Emails", "رسائل تسويقية")}</h4>
               <p className="text-sm text-gray-600 dark:text-gray-300">{t("Receive promotional content and offers", "تلقي المحتوى الترويجي والعروض")}</p>
