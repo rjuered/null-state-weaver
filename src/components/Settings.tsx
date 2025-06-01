@@ -18,12 +18,12 @@ const Settings = () => {
   // Profile states with localStorage persistence
   const [fullName, setFullName] = useState(() => {
     const saved = localStorage.getItem("settings_fullName");
-    return saved || "User";
+    return saved || (user?.user_metadata?.full_name || "User");
   });
   
   const [email, setEmail] = useState(() => {
     const saved = localStorage.getItem("settings_email");
-    return saved || (user?.email || "watekon627@nutrv.com");
+    return saved || (user?.email || "user@example.com");
   });
   
   const [company, setCompany] = useState(() => {
@@ -93,49 +93,72 @@ const Settings = () => {
       root.classList.remove("dark");
     }
     localStorage.setItem("settings_themeMode", themeMode);
+    console.log("Theme mode applied and saved:", themeMode);
   }, [themeMode]);
 
-  // Auto-save notification settings
+  // Auto-save functions for immediate persistence
+  useEffect(() => {
+    localStorage.setItem("settings_fullName", fullName);
+    console.log("Full name saved:", fullName);
+  }, [fullName]);
+
+  useEffect(() => {
+    localStorage.setItem("settings_email", email);
+    console.log("Email saved:", email);
+  }, [email]);
+
+  useEffect(() => {
+    localStorage.setItem("settings_company", company);
+    console.log("Company saved:", company);
+  }, [company]);
+
   useEffect(() => {
     localStorage.setItem("settings_emailNotifications", JSON.stringify(emailNotifications));
+    console.log("Email notifications saved:", emailNotifications);
   }, [emailNotifications]);
 
   useEffect(() => {
     localStorage.setItem("settings_qrCreationAlerts", JSON.stringify(qrCreationAlerts));
+    console.log("QR creation alerts saved:", qrCreationAlerts);
   }, [qrCreationAlerts]);
 
   useEffect(() => {
     localStorage.setItem("settings_marketingEmails", JSON.stringify(marketingEmails));
+    console.log("Marketing emails saved:", marketingEmails);
   }, [marketingEmails]);
 
   useEffect(() => {
     localStorage.setItem("settings_weeklyDigest", JSON.stringify(weeklyDigest));
+    console.log("Weekly digest saved:", weeklyDigest);
   }, [weeklyDigest]);
 
-  // Auto-save appearance settings
   useEffect(() => {
     localStorage.setItem("settings_colorScheme", colorScheme);
+    console.log("Color scheme saved:", colorScheme);
   }, [colorScheme]);
 
   useEffect(() => {
     localStorage.setItem("settings_layoutDensity", layoutDensity);
+    console.log("Layout density saved:", layoutDensity);
   }, [layoutDensity]);
 
   useEffect(() => {
     localStorage.setItem("settings_enableAnimations", JSON.stringify(enableAnimations));
+    console.log("Animations setting saved:", enableAnimations);
   }, [enableAnimations]);
 
   useEffect(() => {
     localStorage.setItem("settings_dateFormat", dateFormat);
+    console.log("Date format saved:", dateFormat);
   }, [dateFormat]);
 
   const handleSaveProfile = () => {
-    // Save profile data to localStorage
+    // Force save all profile data
     localStorage.setItem("settings_fullName", fullName);
     localStorage.setItem("settings_email", email);
     localStorage.setItem("settings_company", company);
     
-    console.log("Profile saved:", { fullName, email, company });
+    console.log("Profile saved manually:", { fullName, email, company });
     
     toast({
       title: t("Profile Updated Successfully", "تم تحديث الملف الشخصي بنجاح"),
@@ -144,8 +167,13 @@ const Settings = () => {
   };
 
   const handleSaveNotifications = () => {
-    // Data is already auto-saved via useEffect, just show confirmation
-    console.log("Notifications saved:", { emailNotifications, qrCreationAlerts, marketingEmails, weeklyDigest });
+    // Force save all notification settings
+    localStorage.setItem("settings_emailNotifications", JSON.stringify(emailNotifications));
+    localStorage.setItem("settings_qrCreationAlerts", JSON.stringify(qrCreationAlerts));
+    localStorage.setItem("settings_marketingEmails", JSON.stringify(marketingEmails));
+    localStorage.setItem("settings_weeklyDigest", JSON.stringify(weeklyDigest));
+    
+    console.log("Notifications saved manually:", { emailNotifications, qrCreationAlerts, marketingEmails, weeklyDigest });
     
     toast({
       title: t("Notification Settings Saved", "تم حفظ إعدادات الإشعارات"),
@@ -154,8 +182,13 @@ const Settings = () => {
   };
 
   const handleSaveAppearance = () => {
-    // Data is already auto-saved via useEffect, just show confirmation
-    console.log("Appearance saved:", { themeMode, colorScheme, layoutDensity, enableAnimations });
+    // Force save all appearance settings
+    localStorage.setItem("settings_themeMode", themeMode);
+    localStorage.setItem("settings_colorScheme", colorScheme);
+    localStorage.setItem("settings_layoutDensity", layoutDensity);
+    localStorage.setItem("settings_enableAnimations", JSON.stringify(enableAnimations));
+    
+    console.log("Appearance saved manually:", { themeMode, colorScheme, layoutDensity, enableAnimations });
     
     toast({
       title: t("Appearance Settings Saved", "تم حفظ إعدادات المظهر"),
@@ -164,8 +197,10 @@ const Settings = () => {
   };
 
   const handleSaveLanguage = () => {
-    // Data is already auto-saved via useEffect, just show confirmation
-    console.log("Language saved:", { language, dateFormat });
+    // Force save all language settings
+    localStorage.setItem("settings_dateFormat", dateFormat);
+    
+    console.log("Language saved manually:", { language, dateFormat });
     
     toast({
       title: t("Language Settings Saved", "تم حفظ إعدادات اللغة"),
@@ -173,32 +208,59 @@ const Settings = () => {
     });
   };
 
-  // Enhanced theme mode handler with immediate saving
+  // Enhanced handlers with immediate saving
   const handleThemeModeChange = (mode: string) => {
     setThemeMode(mode);
     localStorage.setItem("settings_themeMode", mode);
-    console.log("Theme mode changed to:", mode);
+    console.log("Theme mode changed and saved:", mode);
   };
 
-  // Enhanced color scheme handler with immediate saving
   const handleColorSchemeChange = (scheme: string) => {
     setColorScheme(scheme);
     localStorage.setItem("settings_colorScheme", scheme);
-    console.log("Color scheme changed to:", scheme);
+    console.log("Color scheme changed and saved:", scheme);
   };
 
-  // Enhanced layout density handler with immediate saving
   const handleLayoutDensityChange = (density: string) => {
     setLayoutDensity(density);
     localStorage.setItem("settings_layoutDensity", density);
-    console.log("Layout density changed to:", density);
+    console.log("Layout density changed and saved:", density);
   };
 
-  // Enhanced animations handler with immediate saving
   const handleAnimationsChange = (enabled: boolean) => {
     setEnableAnimations(enabled);
     localStorage.setItem("settings_enableAnimations", JSON.stringify(enabled));
-    console.log("Animations changed to:", enabled);
+    console.log("Animations changed and saved:", enabled);
+  };
+
+  const handleEmailNotificationsChange = (enabled: boolean) => {
+    setEmailNotifications(enabled);
+    localStorage.setItem("settings_emailNotifications", JSON.stringify(enabled));
+    console.log("Email notifications changed and saved:", enabled);
+  };
+
+  const handleQrCreationAlertsChange = (enabled: boolean) => {
+    setQrCreationAlerts(enabled);
+    localStorage.setItem("settings_qrCreationAlerts", JSON.stringify(enabled));
+    console.log("QR creation alerts changed and saved:", enabled);
+  };
+
+  const handleMarketingEmailsChange = (enabled: boolean) => {
+    setMarketingEmails(enabled);
+    localStorage.setItem("settings_marketingEmails", JSON.stringify(enabled));
+    console.log("Marketing emails changed and saved:", enabled);
+  };
+
+  const handleWeeklyDigestChange = (enabled: boolean) => {
+    setWeeklyDigest(enabled);
+    localStorage.setItem("settings_weeklyDigest", JSON.stringify(enabled));
+    console.log("Weekly digest changed and saved:", enabled);
+  };
+
+  const handleDateFormatChange = (format: string) => {
+    setDateFormat(format);
+    localStorage.setItem("settings_dateFormat", format);
+    console.log("Date format changed and saved:", format);
   };
 
   const sidebarItems = [
@@ -280,6 +342,12 @@ const Settings = () => {
         <Button 
           variant="outline" 
           className="w-full border-2 border-purple-200 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900 transition-all duration-300 hover:scale-105"
+          onClick={() => {
+            toast({
+              title: t("Password Change", "تغيير كلمة المرور"),
+              description: t("Password change feature coming soon", "ميزة تغيير كلمة المرور قريبًا"),
+            });
+          }}
         >
           {t("Change Password", "تغيير كلمة المرور")}
         </Button>
@@ -293,6 +361,12 @@ const Settings = () => {
         <Button 
           variant="destructive" 
           className="hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
+          onClick={() => {
+            toast({
+              title: t("Account Deletion", "حذف الحساب"),
+              description: t("Account deletion feature requires admin approval", "ميزة حذف الحساب تتطلب موافقة المدير"),
+            });
+          }}
         >
           {t("Delete Account", "حذف الحساب")}
         </Button>
@@ -322,7 +396,7 @@ const Settings = () => {
             </div>
             <Switch
               checked={emailNotifications}
-              onCheckedChange={setEmailNotifications}
+              onCheckedChange={handleEmailNotificationsChange}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
@@ -334,7 +408,7 @@ const Settings = () => {
             </div>
             <Switch
               checked={qrCreationAlerts}
-              onCheckedChange={setQrCreationAlerts}
+              onCheckedChange={handleQrCreationAlertsChange}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
@@ -346,7 +420,7 @@ const Settings = () => {
             </div>
             <Switch
               checked={marketingEmails}
-              onCheckedChange={setMarketingEmails}
+              onCheckedChange={handleMarketingEmailsChange}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
@@ -358,7 +432,7 @@ const Settings = () => {
             </div>
             <Switch
               checked={weeklyDigest}
-              onCheckedChange={setWeeklyDigest}
+              onCheckedChange={handleWeeklyDigestChange}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
@@ -565,7 +639,7 @@ const Settings = () => {
               {t("Date & Time Format", "تنسيق التاريخ والوقت")}
             </h3>
             
-            <RadioGroup value={dateFormat} onValueChange={setDateFormat} className="space-y-3">
+            <RadioGroup value={dateFormat} onValueChange={handleDateFormatChange} className="space-y-3">
               <div className={`flex items-center space-x-2 rounded-lg p-3 ${dateFormat === 'international' ? 'bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'} transition-all duration-300`}>
                 <RadioGroupItem value="international" id="international" />
                 <Label htmlFor="international" className="cursor-pointer flex-1">
