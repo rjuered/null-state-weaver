@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,32 +15,76 @@ const Settings = () => {
   const { toast } = useToast();
   const [activeSection, setActiveSection] = useState("profile");
   
-  // Profile states
-  const [fullName, setFullName] = useState("User");
-  const [email, setEmail] = useState(user?.email || "watekon627@nutrv.com");
-  const [company, setCompany] = useState("");
+  // Profile states with localStorage persistence
+  const [fullName, setFullName] = useState(() => {
+    const saved = localStorage.getItem("settings_fullName");
+    return saved || "User";
+  });
   
-  // Notification states
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [qrCreationAlerts, setQrCreationAlerts] = useState(true);
-  const [marketingEmails, setMarketingEmails] = useState(false);
-  const [weeklyDigest, setWeeklyDigest] = useState(true);
+  const [email, setEmail] = useState(() => {
+    const saved = localStorage.getItem("settings_email");
+    return saved || (user?.email || "watekon627@nutrv.com");
+  });
   
-  // Appearance states
-  const [themeMode, setThemeMode] = useState("light");
-  const [colorScheme, setColorScheme] = useState("purple");
-  const [layoutDensity, setLayoutDensity] = useState("comfortable");
-  const [enableAnimations, setEnableAnimations] = useState(true);
+  const [company, setCompany] = useState(() => {
+    const saved = localStorage.getItem("settings_company");
+    return saved || "";
+  });
   
-  // Language states
-  const [dateFormat, setDateFormat] = useState("international");
+  // Notification states with localStorage persistence
+  const [emailNotifications, setEmailNotifications] = useState(() => {
+    const saved = localStorage.getItem("settings_emailNotifications");
+    return saved ? JSON.parse(saved) : true;
+  });
+  
+  const [qrCreationAlerts, setQrCreationAlerts] = useState(() => {
+    const saved = localStorage.getItem("settings_qrCreationAlerts");
+    return saved ? JSON.parse(saved) : true;
+  });
+  
+  const [marketingEmails, setMarketingEmails] = useState(() => {
+    const saved = localStorage.getItem("settings_marketingEmails");
+    return saved ? JSON.parse(saved) : false;
+  });
+  
+  const [weeklyDigest, setWeeklyDigest] = useState(() => {
+    const saved = localStorage.getItem("settings_weeklyDigest");
+    return saved ? JSON.parse(saved) : true;
+  });
+  
+  // Appearance states with localStorage persistence
+  const [themeMode, setThemeMode] = useState(() => {
+    const saved = localStorage.getItem("settings_themeMode");
+    return saved || "light";
+  });
+  
+  const [colorScheme, setColorScheme] = useState(() => {
+    const saved = localStorage.getItem("settings_colorScheme");
+    return saved || "purple";
+  });
+  
+  const [layoutDensity, setLayoutDensity] = useState(() => {
+    const saved = localStorage.getItem("settings_layoutDensity");
+    return saved || "comfortable";
+  });
+  
+  const [enableAnimations, setEnableAnimations] = useState(() => {
+    const saved = localStorage.getItem("settings_enableAnimations");
+    return saved ? JSON.parse(saved) : true;
+  });
+  
+  // Language states with localStorage persistence
+  const [dateFormat, setDateFormat] = useState(() => {
+    const saved = localStorage.getItem("settings_dateFormat");
+    return saved || "international";
+  });
 
   // Translation function
   const t = (en: string, ar: string) => {
     return language === "ar" ? ar : en;
   };
 
-  // Apply theme changes
+  // Apply theme changes and save to localStorage
   useEffect(() => {
     const root = document.documentElement;
     if (themeMode === "dark") {
@@ -47,34 +92,113 @@ const Settings = () => {
     } else {
       root.classList.remove("dark");
     }
+    localStorage.setItem("settings_themeMode", themeMode);
   }, [themeMode]);
 
+  // Auto-save notification settings
+  useEffect(() => {
+    localStorage.setItem("settings_emailNotifications", JSON.stringify(emailNotifications));
+  }, [emailNotifications]);
+
+  useEffect(() => {
+    localStorage.setItem("settings_qrCreationAlerts", JSON.stringify(qrCreationAlerts));
+  }, [qrCreationAlerts]);
+
+  useEffect(() => {
+    localStorage.setItem("settings_marketingEmails", JSON.stringify(marketingEmails));
+  }, [marketingEmails]);
+
+  useEffect(() => {
+    localStorage.setItem("settings_weeklyDigest", JSON.stringify(weeklyDigest));
+  }, [weeklyDigest]);
+
+  // Auto-save appearance settings
+  useEffect(() => {
+    localStorage.setItem("settings_colorScheme", colorScheme);
+  }, [colorScheme]);
+
+  useEffect(() => {
+    localStorage.setItem("settings_layoutDensity", layoutDensity);
+  }, [layoutDensity]);
+
+  useEffect(() => {
+    localStorage.setItem("settings_enableAnimations", JSON.stringify(enableAnimations));
+  }, [enableAnimations]);
+
+  useEffect(() => {
+    localStorage.setItem("settings_dateFormat", dateFormat);
+  }, [dateFormat]);
+
   const handleSaveProfile = () => {
+    // Save profile data to localStorage
+    localStorage.setItem("settings_fullName", fullName);
+    localStorage.setItem("settings_email", email);
+    localStorage.setItem("settings_company", company);
+    
+    console.log("Profile saved:", { fullName, email, company });
+    
     toast({
-      title: t("Profile Updated", "تم تحديث الملف الشخصي"),
-      description: t("Your profile information has been saved successfully.", "تم حفظ معلومات ملفك الشخصي بنجاح."),
+      title: t("Profile Updated Successfully", "تم تحديث الملف الشخصي بنجاح"),
+      description: t("Your profile information has been saved and will persist.", "تم حفظ معلومات ملفك الشخصي وستبقى محفوظة."),
     });
   };
 
   const handleSaveNotifications = () => {
+    // Data is already auto-saved via useEffect, just show confirmation
+    console.log("Notifications saved:", { emailNotifications, qrCreationAlerts, marketingEmails, weeklyDigest });
+    
     toast({
-      title: t("Notification Settings Updated", "تم تحديث إعدادات الإشعارات"),
-      description: t("Your notification preferences have been saved.", "تم حفظ تفضيلات الإشعارات الخاصة بك."),
+      title: t("Notification Settings Saved", "تم حفظ إعدادات الإشعارات"),
+      description: t("Your notification preferences have been saved permanently.", "تم حفظ تفضيلات الإشعارات بشكل دائم."),
     });
   };
 
   const handleSaveAppearance = () => {
+    // Data is already auto-saved via useEffect, just show confirmation
+    console.log("Appearance saved:", { themeMode, colorScheme, layoutDensity, enableAnimations });
+    
     toast({
-      title: t("Appearance Settings Updated", "تم تحديث إعدادات المظهر"),
-      description: t("Your appearance preferences have been saved.", "تم حفظ تفضيلات المظهر الخاصة بك."),
+      title: t("Appearance Settings Saved", "تم حفظ إعدادات المظهر"),
+      description: t("Your appearance preferences have been saved and applied.", "تم حفظ وتطبيق تفضيلات المظهر."),
     });
   };
 
   const handleSaveLanguage = () => {
+    // Data is already auto-saved via useEffect, just show confirmation
+    console.log("Language saved:", { language, dateFormat });
+    
     toast({
-      title: t("Language Settings Updated", "تم تحديث إعدادات اللغة"),
-      description: t("Your language preferences have been saved.", "تم حفظ تفضيلات اللغة الخاصة بك."),
+      title: t("Language Settings Saved", "تم حفظ إعدادات اللغة"),
+      description: t("Your language preferences have been saved permanently.", "تم حفظ تفضيلات اللغة بشكل دائم."),
     });
+  };
+
+  // Enhanced theme mode handler with immediate saving
+  const handleThemeModeChange = (mode: string) => {
+    setThemeMode(mode);
+    localStorage.setItem("settings_themeMode", mode);
+    console.log("Theme mode changed to:", mode);
+  };
+
+  // Enhanced color scheme handler with immediate saving
+  const handleColorSchemeChange = (scheme: string) => {
+    setColorScheme(scheme);
+    localStorage.setItem("settings_colorScheme", scheme);
+    console.log("Color scheme changed to:", scheme);
+  };
+
+  // Enhanced layout density handler with immediate saving
+  const handleLayoutDensityChange = (density: string) => {
+    setLayoutDensity(density);
+    localStorage.setItem("settings_layoutDensity", density);
+    console.log("Layout density changed to:", density);
+  };
+
+  // Enhanced animations handler with immediate saving
+  const handleAnimationsChange = (enabled: boolean) => {
+    setEnableAnimations(enabled);
+    localStorage.setItem("settings_enableAnimations", JSON.stringify(enabled));
+    console.log("Animations changed to:", enabled);
   };
 
   const sidebarItems = [
@@ -278,7 +402,7 @@ const Settings = () => {
                     ? "border-purple-500 bg-purple-50 dark:bg-purple-900/30 shadow-lg scale-105" 
                     : "border-gray-200 dark:border-gray-700 hover:border-purple-300 hover:shadow hover:scale-105"
                   }`}
-                onClick={() => setThemeMode("light")}
+                onClick={() => handleThemeModeChange("light")}
               >
                 <div className="w-12 h-12 flex items-center justify-center bg-white rounded-full shadow-md mb-3">
                   <Sun className="w-6 h-6 text-yellow-500" />
@@ -294,7 +418,7 @@ const Settings = () => {
                     ? "border-purple-500 bg-purple-50 dark:bg-purple-900/30 shadow-lg scale-105" 
                     : "border-gray-200 dark:border-gray-700 hover:border-purple-300 hover:shadow hover:scale-105"
                   }`}
-                onClick={() => setThemeMode("dark")}
+                onClick={() => handleThemeModeChange("dark")}
               >
                 <div className="w-12 h-12 flex items-center justify-center bg-gray-900 rounded-full shadow-md mb-3">
                   <Moon className="w-6 h-6 text-gray-100" />
@@ -310,7 +434,7 @@ const Settings = () => {
                     ? "border-purple-500 bg-purple-50 dark:bg-purple-900/30 shadow-lg scale-105" 
                     : "border-gray-200 dark:border-gray-700 hover:border-purple-300 hover:shadow hover:scale-105"
                   }`}
-                onClick={() => setThemeMode("system")}
+                onClick={() => handleThemeModeChange("system")}
               >
                 <div className="w-12 h-12 flex items-center justify-center bg-gradient-to-br from-white to-gray-900 rounded-full shadow-md mb-3">
                   <SettingsIcon className="w-6 h-6 text-gray-600" />
@@ -326,7 +450,7 @@ const Settings = () => {
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
               {t("Color Scheme", "نظام الألوان")}
             </h3>
-            <Select value={colorScheme} onValueChange={setColorScheme}>
+            <Select value={colorScheme} onValueChange={handleColorSchemeChange}>
               <SelectTrigger className="w-full border-2 focus:border-purple-500 transition-all duration-300">
                 <SelectValue placeholder={t("Select color scheme", "اختر نظام الألوان")} />
               </SelectTrigger>
@@ -350,7 +474,7 @@ const Settings = () => {
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
               {t("Layout Density", "كثافة التخطيط")}
             </h3>
-            <Select value={layoutDensity} onValueChange={setLayoutDensity}>
+            <Select value={layoutDensity} onValueChange={handleLayoutDensityChange}>
               <SelectTrigger className="w-full border-2 focus:border-purple-500 transition-all duration-300">
                 <SelectValue placeholder={t("Select layout density", "اختر كثافة التخطيط")} />
               </SelectTrigger>
@@ -376,7 +500,7 @@ const Settings = () => {
               </div>
               <Switch
                 checked={enableAnimations}
-                onCheckedChange={setEnableAnimations}
+                onCheckedChange={handleAnimationsChange}
                 className="data-[state=checked]:bg-purple-600"
               />
             </div>
