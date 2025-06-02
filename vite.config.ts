@@ -21,6 +21,10 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
+    // Optimize for Vercel deployment
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,
     // Minify for production builds
     minify: 'terser',
     terserOptions: {
@@ -44,11 +48,20 @@ export default defineConfig(({ mode }) => ({
         }
       }
     },
-    // Generate sourcemaps only in development
-    sourcemap: mode !== 'production',
+    // Ensure compatibility with Vercel
+    target: 'esnext',
+    modulePreload: {
+      polyfill: false
+    }
   },
   // Enable CSS code splitting
   css: {
-    devSourcemap: true,
+    devSourcemap: false,
   },
+  // Ensure proper base URL for deployment
+  base: '/',
+  // Optimize dependencies
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom']
+  }
 }));

@@ -16,10 +16,15 @@ const Index = () => {
   const navigate = useNavigate();
   const { isLoggedIn, language } = useUser();
   
-  // Load homepage ad script with better error handling
+  // Load homepage ad script with better error handling for Vercel deployment
   useEffect(() => {
     const loadAd = () => {
       try {
+        // Only load in production environment
+        if (typeof window === 'undefined' || window.location.hostname === 'localhost') {
+          return;
+        }
+
         // Remove any existing ad scripts first
         const existingScripts = document.querySelectorAll('script[src*="profitableratecpm.com"]');
         existingScripts.forEach(script => {
